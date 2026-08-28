@@ -2,6 +2,16 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Reiseplaner" Height="650" Width="1350">
+    <Window.Resources>
+        <!-- Platzhaltertext (Watermark) für eine TextBox: eine TextBlock liegt als Overlay über der
+             TextBox (unverändertes Standard-Template!) und ist nur sichtbar, solange die TextBox leer ist. -->
+        <Style x:Key="PlatzhalterOverlay" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="Gray"/>
+            <Setter Property="Margin" Value="6,0,0,0"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="IsHitTestVisible" Value="False"/>
+        </Style>
+    </Window.Resources>
     <Grid Margin="10">
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="700"/>
@@ -35,11 +45,22 @@
 
             <StackPanel Grid.Row="2" Margin="0,10,0,0">
                 <TextBlock Text="Neue Reise" FontWeight="Bold" Margin="0,0,0,4"/>
-                <TextBox x:Name="TitelBox" Margin="0,2" ToolTip="Titel"/>
-                <TextBox x:Name="ZielortBox" Margin="0,2" ToolTip="Zielort"/>
+
+                <Grid Margin="0,2">
+                    <TextBox x:Name="TitelBox" TextChanged="PlatzhalterAktualisieren"/>
+                    <TextBlock x:Name="TitelPlatzhalter" Text="Reisetitel" Style="{StaticResource PlatzhalterOverlay}"/>
+                </Grid>
+                <Grid Margin="0,2">
+                    <TextBox x:Name="ZielortBox" TextChanged="PlatzhalterAktualisieren"/>
+                    <TextBlock x:Name="ZielortPlatzhalter" Text="Zielort" Style="{StaticResource PlatzhalterOverlay}"/>
+                </Grid>
                 <DatePicker x:Name="StartPicker" Margin="0,2"/>
                 <DatePicker x:Name="EndePicker" Margin="0,2"/>
-                <TextBox x:Name="BudgetBox" Margin="0,2" ToolTip="Budget"/>
+                <Grid Margin="0,2">
+                    <TextBox x:Name="BudgetBox" TextChanged="PlatzhalterAktualisieren"/>
+                    <TextBlock x:Name="BudgetPlatzhalter" Text="Budget (CHF)" Style="{StaticResource PlatzhalterOverlay}"/>
+                </Grid>
+
                 <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
                     <Button x:Name="ReiseHinzufuegenButton" Content="Hinzufügen" Width="100"
                             Margin="0,0,6,0" Click="ReiseHinzufuegenButton_Click"/>
@@ -75,7 +96,11 @@
 
             <StackPanel Grid.Row="3" Margin="0,10,0,0">
                 <TextBlock Text="Neuer Programmpunkt" FontWeight="Bold" Margin="0,0,0,4"/>
-                <TextBox x:Name="PunktTitelBox" Margin="0,2" ToolTip="Titel"/>
+
+                <Grid Margin="0,2">
+                    <TextBox x:Name="PunktTitelBox" TextChanged="PlatzhalterAktualisieren"/>
+                    <TextBlock x:Name="PunktTitelPlatzhalter" Text="Programmpunkt-Titel" Style="{StaticResource PlatzhalterOverlay}"/>
+                </Grid>
                 <DatePicker x:Name="PunktDatumPicker" Margin="0,2"/>
                 <ComboBox x:Name="KategorieBox" Margin="0,2">
                     <ComboBoxItem Content="Sehenswürdigkeit"/>
@@ -83,7 +108,11 @@
                     <ComboBoxItem Content="Unterkunft"/>
                     <ComboBoxItem Content="Essen"/>
                 </ComboBox>
-                <TextBox x:Name="KostenBox" Margin="0,2" ToolTip="Kosten"/>
+                <Grid Margin="0,2">
+                    <TextBox x:Name="KostenBox" TextChanged="PlatzhalterAktualisieren"/>
+                    <TextBlock x:Name="KostenPlatzhalter" Text="Kosten (CHF)" Style="{StaticResource PlatzhalterOverlay}"/>
+                </Grid>
+
                 <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
                     <Button x:Name="PunktHinzufuegenButton" Content="Hinzufügen" Width="100"
                             Margin="0,0,6,0" Click="PunktHinzufuegenButton_Click"/>

@@ -26,6 +26,20 @@ public partial class MainWindow : Window
 
     private Reise? AktuelleReise => ReisenGrid.SelectedItem as Reise;
 
+    // Blendet den Platzhaltertext (z.B. "Reisetitel") aus, sobald die zugehörige TextBox
+    // Inhalt hat, und wieder ein, sobald sie leer ist (reine UI-Anzeigelogik).
+    private void PlatzhalterAktualisieren(object sender, TextChangedEventArgs e)
+    {
+        var box = (TextBox)sender;
+        var istLeer = box.Text.Length == 0;
+
+        if (box == TitelBox) TitelPlatzhalter.Visibility = istLeer ? Visibility.Visible : Visibility.Collapsed;
+        else if (box == ZielortBox) ZielortPlatzhalter.Visibility = istLeer ? Visibility.Visible : Visibility.Collapsed;
+        else if (box == BudgetBox) BudgetPlatzhalter.Visibility = istLeer ? Visibility.Visible : Visibility.Collapsed;
+        else if (box == PunktTitelBox) PunktTitelPlatzhalter.Visibility = istLeer ? Visibility.Visible : Visibility.Collapsed;
+        else if (box == KostenBox) KostenPlatzhalter.Visibility = istLeer ? Visibility.Visible : Visibility.Collapsed;
+    }
+
     private void ReisenLaden()
     {
         ReisenGrid.ItemsSource = _reiseService.GetAlle();
