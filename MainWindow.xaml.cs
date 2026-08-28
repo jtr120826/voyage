@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Markup;
 using Reiseplaner.Models;
 using Reiseplaner.Repositories;
 
@@ -14,6 +15,12 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
+
+        // XAML-Bindings (z.B. StringFormat={}{0:C}) nutzen sonst immer en-US statt der
+        // System-Kultur (bekannter WPF-Effekt) - dadurch würde CHF 1'500.00 im Code-Behind-Text
+        // nicht zur $-Anzeige in den DataGrid-Spalten passen.
+        Language = XmlLanguage.GetLanguage(CultureInfo.CurrentCulture.IetfLanguageTag);
+
         ReisenLaden();
     }
 
@@ -22,6 +29,16 @@ public partial class MainWindow : Window
     private void ReisenLaden()
     {
         ReisenGrid.ItemsSource = _reiseRepository.GetAll();
+    }
+
+    // Lädt die Reisen neu (aktualisiert Geplantes/Verbleibendes Budget) und behält die Auswahl bei,
+    // damit die Programmpunkt-Ansicht nach einer Änderung nicht verloren geht.
+    private void ReisenAktualisierenMitAuswahl()
+    {
+        var aktuelleId = AktuelleReise?.Id;
+        var reisen = _reiseRepository.GetAll();
+        ReisenGrid.ItemsSource = reisen;
+        ReisenGrid.SelectedItem = reisen.FirstOrDefault(r => r.Id == aktuelleId);
     }
 
     private void ReisenGrid_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -130,7 +147,7 @@ public partial class MainWindow : Window
         KategorieBox.SelectedItem = null;
         KostenBox.Clear();
 
-        ProgrammpunkteLadenUndBudgetAnzeigen();
+        ReisenAktualisierenMitAuswahl();
     }
 
     private void ErledigtButton_Click(object sender, RoutedEventArgs e)
@@ -142,7 +159,7 @@ public partial class MainWindow : Window
         }
 
         _programmpunktRepository.SetErledigt(punkt.Id, !punkt.Erledigt);
-        ProgrammpunkteLadenUndBudgetAnzeigen();
+        ReisenAktualisierenMitAuswahl();
     }
 
     private void PunktLoeschenButton_Click(object sender, RoutedEventArgs e)
@@ -154,6 +171,6 @@ public partial class MainWindow : Window
         }
 
         _programmpunktRepository.Delete(punkt.Id);
-        ProgrammpunkteLadenUndBudgetAnzeigen();
+        ReisenAktualisierenMitAuswahl();
     }
 }

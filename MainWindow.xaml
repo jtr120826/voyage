@@ -1,10 +1,10 @@
 <Window x:Class="Reiseplaner.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Reiseplaner" Height="650" Width="1000">
+        Title="Reiseplaner" Height="650" Width="1350">
     <Grid Margin="10">
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="380"/>
+            <ColumnDefinition Width="700"/>
             <ColumnDefinition Width="10"/>
             <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
@@ -23,11 +23,13 @@
                       IsReadOnly="True" SelectionMode="Single"
                       SelectionChanged="ReisenGrid_SelectionChanged">
                 <DataGrid.Columns>
-                    <DataGridTextColumn Header="Titel" Binding="{Binding Titel}" Width="*"/>
-                    <DataGridTextColumn Header="Zielort" Binding="{Binding Zielort}" Width="*"/>
+                    <DataGridTextColumn Header="Titel" Binding="{Binding Titel}" Width="90"/>
+                    <DataGridTextColumn Header="Zielort" Binding="{Binding Zielort}" Width="90"/>
                     <DataGridTextColumn Header="Start" Binding="{Binding Startdatum}" Width="80"/>
                     <DataGridTextColumn Header="Ende" Binding="{Binding Enddatum}" Width="80"/>
-                    <DataGridTextColumn Header="Budget" Binding="{Binding Budget}" Width="70"/>
+                    <DataGridTextColumn Header="Budget" Binding="{Binding Budget, StringFormat={}{0:C}}" Width="90"/>
+                    <DataGridTextColumn Header="Geplantes Budget" Binding="{Binding GeplantesBudget, StringFormat={}{0:C}}" Width="120"/>
+                    <DataGridTextColumn Header="Verbleibendes Budget" Binding="{Binding VerbleibendesBudget, StringFormat={}{0:C}}" Width="130"/>
                 </DataGrid.Columns>
             </DataGrid>
 

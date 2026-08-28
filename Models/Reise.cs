@@ -8,4 +8,6 @@ public class Reise
     public string Startdatum { get; set; } = "";
     public string Enddatum { get; set; } = "";
     public decimal Budget { get; set; }
+    public decimal GeplantesBudget { get; set; }
+    public decimal VerbleibendesBudget => Budget - GeplantesBudget;
 }

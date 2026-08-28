@@ -12,7 +12,13 @@ public class ReiseRepository
         con.Open();
 
         var cmd = con.CreateCommand();
-        cmd.CommandText = "SELECT Id, Titel, Zielort, Startdatum, Enddatum, Budget FROM Reisen ORDER BY Startdatum";
+        cmd.CommandText = @"
+            SELECT r.Id, r.Titel, r.Zielort, r.Startdatum, r.Enddatum, r.Budget,
+                   COALESCE(SUM(p.Kosten), 0) AS GeplantesBudget
+            FROM Reisen r
+            LEFT JOIN Programmpunkte p ON p.ReiseId = r.Id
+            GROUP BY r.Id, r.Titel, r.Zielort, r.Startdatum, r.Enddatum, r.Budget
+            ORDER BY r.Startdatum";
 
         using var reader = cmd.ExecuteReader();
         while (reader.Read())
@@ -24,7 +30,8 @@ public class ReiseRepository
                 Zielort = reader.GetString(2),
                 Startdatum = reader.GetString(3),
                 Enddatum = reader.GetString(4),
-                Budget = reader.GetDecimal(5)
+                Budget = reader.GetDecimal(5),
+                GeplantesBudget = reader.GetDecimal(6)
             });
         }
         return list;
