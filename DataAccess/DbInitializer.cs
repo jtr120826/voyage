@@ -1,6 +1,6 @@
 using Microsoft.Data.Sqlite;
 
-namespace Reiseplaner;
+namespace Reiseplaner.DataAccess;
 
 public static class DbInitializer
 {

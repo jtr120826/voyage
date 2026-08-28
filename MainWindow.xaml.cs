@@ -3,14 +3,14 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Markup;
 using Reiseplaner.Models;
-using Reiseplaner.Repositories;
+using Reiseplaner.Services;
 
 namespace Reiseplaner;
 
 public partial class MainWindow : Window
 {
-    private readonly ReiseRepository _reiseRepository = new();
-    private readonly ProgrammpunktRepository _programmpunktRepository = new();
+    private readonly ReiseService _reiseService = new();
+    private readonly ProgrammpunktService _programmpunktService = new();
 
     public MainWindow()
     {
@@ -28,7 +28,7 @@ public partial class MainWindow : Window
 
     private void ReisenLaden()
     {
-        ReisenGrid.ItemsSource = _reiseRepository.GetAll();
+        ReisenGrid.ItemsSource = _reiseService.GetAlle();
     }
 
     // Lädt die Reisen neu (aktualisiert Geplantes/Verbleibendes Budget) und behält die Auswahl bei,
@@ -36,7 +36,7 @@ public partial class MainWindow : Window
     private void ReisenAktualisierenMitAuswahl()
     {
         var aktuelleId = AktuelleReise?.Id;
-        var reisen = _reiseRepository.GetAll();
+        var reisen = _reiseService.GetAlle();
         ReisenGrid.ItemsSource = reisen;
         ReisenGrid.SelectedItem = reisen.FirstOrDefault(r => r.Id == aktuelleId);
     }
@@ -56,15 +56,13 @@ public partial class MainWindow : Window
             return;
         }
 
-        var punkte = _programmpunktRepository.GetByReise(reise.Id);
+        var punkte = _programmpunktService.GetByReise(reise.Id);
         ProgrammGrid.ItemsSource = punkte;
 
-        var summeKosten = punkte.Sum(p => p.Kosten);
-        var restbudget = reise.Budget - summeKosten;
-
-        BudgetInfoText.Text = restbudget >= 0
-            ? $"Budget: {reise.Budget:C} | Ausgegeben: {summeKosten:C} | Rest: {restbudget:C}"
-            : $"Budget: {reise.Budget:C} | Ausgegeben: {summeKosten:C} | ÜBERSCHRITTEN um {-restbudget:C}!";
+        var status = _programmpunktService.BerechneBudgetStatus(reise, punkte);
+        BudgetInfoText.Text = status.Ueberschritten
+            ? $"Budget: {reise.Budget:C} | Ausgegeben: {status.Ausgegeben:C} | ÜBERSCHRITTEN um {-status.Rest:C}!"
+            : $"Budget: {reise.Budget:C} | Ausgegeben: {status.Ausgegeben:C} | Rest: {status.Rest:C}";
     }
 
     private void ReiseHinzufuegenButton_Click(object sender, RoutedEventArgs e)
@@ -87,7 +85,7 @@ public partial class MainWindow : Window
             Budget = budget
         };
 
-        _reiseRepository.Add(reise);
+        _reiseService.Hinzufuegen(reise);
 
         TitelBox.Clear();
         ZielortBox.Clear();
@@ -107,7 +105,7 @@ public partial class MainWindow : Window
             return;
         }
 
-        _reiseRepository.Delete(reise.Id);
+        _reiseService.Loeschen(reise.Id);
         ReisenLaden();
         ProgrammGrid.ItemsSource = null;
         BudgetInfoText.Text = "";
@@ -140,7 +138,7 @@ public partial class MainWindow : Window
             ReiseId = reise.Id
         };
 
-        _programmpunktRepository.Add(punkt);
+        _programmpunktService.Hinzufuegen(punkt);
 
         PunktTitelBox.Clear();
         PunktDatumPicker.SelectedDate = null;
@@ -158,7 +156,7 @@ public partial class MainWindow : Window
             return;
         }
 
-        _programmpunktRepository.SetErledigt(punkt.Id, !punkt.Erledigt);
+        _programmpunktService.ErledigtUmschalten(punkt);
         ReisenAktualisierenMitAuswahl();
     }
 
@@ -170,7 +168,7 @@ public partial class MainWindow : Window
             return;
         }
 
-        _programmpunktRepository.Delete(punkt.Id);
+        _programmpunktService.Loeschen(punkt.Id);
         ReisenAktualisierenMitAuswahl();
     }
 }

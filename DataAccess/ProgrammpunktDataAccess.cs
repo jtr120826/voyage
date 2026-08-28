@@ -1,9 +1,9 @@
 using Microsoft.Data.Sqlite;
 using Reiseplaner.Models;
 
-namespace Reiseplaner.Repositories;
+namespace Reiseplaner.DataAccess;
 
-public class ProgrammpunktRepository
+public class ProgrammpunktDataAccess
 {
     public List<Programmpunkt> GetByReise(int reiseId)
     {
