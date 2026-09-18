@@ -1,7 +1,7 @@
 # Reiseplaner
 
 WPF-Desktop-App zur Planung von Reisen mit Programmpunkten und Budget-Überwachung.
-Entstanden im Modul PROG1 (gibb) als laufendes Projekt über K0–K1.
+Entstanden im Modul PROG1 (gibb) als laufendes Projekt über K0–K2.
 
 ## Funktionen
 
@@ -12,19 +12,20 @@ Entstanden im Modul PROG1 (gibb) als laufendes Projekt über K0–K1.
 
 ## Datenmodell
 
-- `Reise` (1) → `Programmpunkt` (N), verknüpft über `ReiseId`
-- Speicherung lokal in SQLite (`app.db`, nicht im Repo – wird beim ersten Start automatisch erzeugt)
+- `Reise` (1) → `Programmpunkt` (N) als EF-Core-Navigation-Property, verknüpft über `ReiseId`
+- Speicherung lokal in SQLite (`app.db`, nicht im Repo – wird beim ersten Start per EF-Core-Migration automatisch erzeugt)
 
 ## Architektur
 
-Schichtenarchitektur (seit K1):
+Schichtenarchitektur (seit K1), Datenzugriff über EF Core (seit K2):
 
 ```
-MainWindow.xaml.cs (UI)  →  Services/  (Business-Logik)  →  DataAccess/  (SQL/ADO.NET)
+MainWindow.xaml.cs (UI)  →  Services/  (Business-Logik)  →  DataAccess/  (EF Core / LINQ)
 ```
 
 - `Services/`: `ReiseService`, `ProgrammpunktService` – u. a. Erledigt-Umschalten-Entscheidung und Budget-Berechnung
-- `DataAccess/`: `ReiseDataAccess`, `ProgrammpunktDataAccess`, `DbInitializer` – reiner SQL-Zugriff via `Microsoft.Data.Sqlite`, kein ORM
+- `DataAccess/`: `ReiseDataAccess`, `ProgrammpunktDataAccess`, `AppDbContext` – Zugriff über Entity Framework Core (SQLite-Provider), kein rohes SQL mehr
+- `Migrations/`: EF-Core-Migrationen (Schema wird per `Database.Migrate()` beim Start angewendet)
 - Kein MVVM, kein Repository-Pattern/Interfaces – kommt planmässig erst in K3
 
 ## Stand
@@ -33,8 +34,9 @@ MainWindow.xaml.cs (UI)  →  Services/  (Business-Logik)  →  DataAccess/  (SQ
 |---|---|
 | K0 – KI-gestützte App-Erstellung | ✅ abgeschlossen |
 | K1 – Schichtenarchitektur | ✅ abgeschlossen (PR #1 gemerged) |
-| K2–K5 | offen |
+| K2 – ORM / EF Core | ✅ abgeschlossen |
+| K3–K5 | offen |
 
 ## Tech-Stack
 
-.NET 10, WPF, Microsoft.Data.Sqlite, SQLite
+.NET 10, WPF, Entity Framework Core (SQLite-Provider), SQLite
