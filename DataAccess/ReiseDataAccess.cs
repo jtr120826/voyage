@@ -1,4 +1,4 @@
-using Microsoft.Data.Sqlite;
+using Microsoft.EntityFrameworkCore;
 using Reiseplaner.Models;
 
 namespace Reiseplaner.DataAccess;
@@ -7,67 +7,42 @@ public class ReiseDataAccess
 {
     public List<Reise> GetAll()
     {
-        var list = new List<Reise>();
-        using var con = new SqliteConnection(DbInitializer.ConnectionString);
-        con.Open();
+        using var context = new AppDbContext();
 
-        var cmd = con.CreateCommand();
-        cmd.CommandText = @"
-            SELECT r.Id, r.Titel, r.Zielort, r.Startdatum, r.Enddatum, r.Budget,
-                   COALESCE(SUM(p.Kosten), 0) AS GeplantesBudget
-            FROM Reisen r
-            LEFT JOIN Programmpunkte p ON p.ReiseId = r.Id
-            GROUP BY r.Id, r.Titel, r.Zielort, r.Startdatum, r.Enddatum, r.Budget
-            ORDER BY r.Startdatum";
+        // Include() lädt die Programmpunkte pro Reise gleich mit (Navigation Property) -
+        // eine einzelne Abfrage statt pro Reise separat nachzuladen (N+1-Falle vermeiden).
+        var reisen = context.Reisen
+            .Include(r => r.Programmpunkte)
+            .OrderBy(r => r.Startdatum)
+            .ToList();
 
-        using var reader = cmd.ExecuteReader();
-        while (reader.Read())
+        foreach (var reise in reisen)
         {
-            list.Add(new Reise
-            {
-                Id = reader.GetInt32(0),
-                Titel = reader.GetString(1),
-                Zielort = reader.GetString(2),
-                Startdatum = reader.GetString(3),
-                Enddatum = reader.GetString(4),
-                Budget = reader.GetDecimal(5),
-                GeplantesBudget = reader.GetDecimal(6)
-            });
+            reise.GeplantesBudget = reise.Programmpunkte.Sum(p => p.Kosten);
         }
-        return list;
+
+        return reisen;
     }
 
     public void Add(Reise reise)
     {
-        using var con = new SqliteConnection(DbInitializer.ConnectionString);
-        con.Open();
-
-        var cmd = con.CreateCommand();
-        cmd.CommandText = @"
-            INSERT INTO Reisen (Titel, Zielort, Startdatum, Enddatum, Budget)
-            VALUES ($titel, $zielort, $start, $ende, $budget)";
-        cmd.Parameters.AddWithValue("$titel", reise.Titel);
-        cmd.Parameters.AddWithValue("$zielort", reise.Zielort);
-        cmd.Parameters.AddWithValue("$start", reise.Startdatum);
-        cmd.Parameters.AddWithValue("$ende", reise.Enddatum);
-        cmd.Parameters.AddWithValue("$budget", reise.Budget);
-        cmd.ExecuteNonQuery();
+        using var context = new AppDbContext();
+        context.Reisen.Add(reise);
+        context.SaveChanges();
     }
 
     public void Delete(int id)
     {
-        using var con = new SqliteConnection(DbInitializer.ConnectionString);
-        con.Open();
+        using var context = new AppDbContext();
 
-        // Abhängige Programmpunkte zuerst entfernen (SQLite erzwingt FK ohne PRAGMA nicht automatisch)
-        var cmdChildren = con.CreateCommand();
-        cmdChildren.CommandText = "DELETE FROM Programmpunkte WHERE ReiseId = $id";
-        cmdChildren.Parameters.AddWithValue("$id", id);
-        cmdChildren.ExecuteNonQuery();
+        var reise = context.Reisen
+            .Include(r => r.Programmpunkte)
+            .FirstOrDefault(r => r.Id == id);
+        if (reise == null) return;
 
-        var cmd = con.CreateCommand();
-        cmd.CommandText = "DELETE FROM Reisen WHERE Id = $id";
-        cmd.Parameters.AddWithValue("$id", id);
-        cmd.ExecuteNonQuery();
+        // Abhängige Programmpunkte zuerst entfernen (kein automatisches Cascade-Delete konfiguriert)
+        context.Programmpunkte.RemoveRange(reise.Programmpunkte);
+        context.Reisen.Remove(reise);
+        context.SaveChanges();
     }
 }
