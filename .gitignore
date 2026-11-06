@@ -4,3 +4,28 @@ obj/
 app.db
 app.db-shm
 app.db-wal
+
+# Visual Studio / IDE
+.vs/
+*.suo
+*.userprefs
+.idea/
+.vscode/
+
+# Testergebnisse und Logs
+TestResults/
+*.log
+
+# SQLite (lokale Datenbank, enthaelt Benutzerkonten mit Passwort-Hashes)
+*.db
+*.db-journal
+*.sqlite
+*.sqlite3
+
+# Secrets: echte Konfiguration bleibt lokal, nur eine .Example-Datei mit Platzhaltern gehoert ins Repository
+.env
+appsettings.json
+appsettings.*.json
+!appsettings.Example.json
+*.pfx
+*.key
