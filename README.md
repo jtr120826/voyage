@@ -75,7 +75,7 @@ MainWindow (UI)  →  Services  →  Repositories  →  EF Core / SQLite
 
 ### V-A Security und Authentication
 
-**Anmeldung:** Beim Start erscheint ein Login (`LoginWindow`). Gibt es noch kein Konto, legt die App stattdessen den **ersten Administrator** an (Ersteinrichtung). Es gibt kein eingebautes Standardkonto und kein Standardpasswort. Weitere Konten legen Administratoren über "Benutzer anlegen" an (keine Selbstregistrierung). Passwort: mindestens 10 Zeichen, Benutzernamen sind eindeutig (ohne Gross-/Kleinschreibung).
+**Anmeldung:** Beim Start erscheint ein Login (`LoginWindow`). Gibt es noch kein Konto, legt die App stattdessen den **ersten Administrator** an (Ersteinrichtung). Es gibt kein eingebautes Standardkonto und kein Standardpasswort. Weitere Konten legen Administratoren über "Benutzer anlegen" an (keine Selbstregistrierung). Passwort: mindestens 8 Zeichen, Benutzernamen sind eindeutig (ohne Gross-/Kleinschreibung).
 
 **Passwort-Hashing:** PBKDF2-HMAC-SHA256 mit **600 000 Iterationen**, 16 Byte Zufalls-Salt pro Passwort, 32 Byte Hash (`PasswortHasher`, .NET `Rfc2898DeriveBytes.Pbkdf2`). Gespeichert werden nur Hash, Salt und Iterationszahl (Spalten in `Benutzer`), nie das Passwort. Der Vergleich läuft mit `CryptographicOperations.FixedTimeEquals` (kein Timing-Leck).
 - **Warum PBKDF2 und nicht bcrypt/Argon2?** Argon2id wäre laut OWASP die erste Wahl, ist aber nicht in .NET eingebaut und bräuchte ein zusätzliches Paket. PBKDF2 ist in .NET enthalten (keine Fremdbibliothek, kein eigener Kryptocode) und bei OWASP als Option aufgeführt.
