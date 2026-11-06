@@ -1,7 +1,7 @@
 # Reiseplaner
 
-WPF-Desktop-App zur Planung von Reisen mit Programmpunkten und Budget-Überwachung.
-Entstanden im Modul PROG1 (gibb) als laufendes Projekt über K0–K4 und die Vertiefungen V-A und V-D.
+Desktop-App (WPF, .NET 10) zur Planung von Reisen mit Programmpunkten und Budget-Überwachung (lokal mit SQLite).
+Entstanden im Modul PROG1 (gibb) als laufendes Projekt über K0–K5 und die Vertiefungen V-A und V-D.
 
 ## Funktionen
 
@@ -122,6 +122,32 @@ MainWindow (UI)  →  Services  →  Repositories  →  EF Core / SQLite
 
 **Tests:** 10 Tests prüfen das Event: Es kommt bei jeder Änderung, bei unbekannter Id nicht, und mehrere unabhängige Abonnenten werden alle informiert.
 
+## Git-Verlauf und Lernweg (K5)
+
+Branch-Strategie: **Lean Git Flow**. Nur `main` und pro Schritt ein Feature-Branch `feature/<thema>`, der per Pull Request nach `main` gemerged wird. Commit-Nachrichten nennen den Schritt ("K2: ...", "V-A Security: ...").
+
+| Schritt | Branch | Pull Request |
+|---|---|---|
+| K0 App erstellen | direkt auf `main` (Ausgangsstand, Commit `3772075`) | – |
+| K1 Schichtenarchitektur | `feature/k1-schichten` | [#1](https://github.com/jtr120826/voyage/pull/1) |
+| K2 ORM / EF Core | `feature/k2-efcore` | [#2](https://github.com/jtr120826/voyage/pull/2) |
+| K3 Repository, DTOs | `feature/k3-repository-dto` | [#3](https://github.com/jtr120826/voyage/pull/3) |
+| K4 Clean Code, Unit Tests | `feature/k4-cleancode-tests` | [#4](https://github.com/jtr120826/voyage/pull/4) |
+| Bearbeiten-Funktion | `feature/bearbeiten-funktion` | [#5](https://github.com/jtr120826/voyage/pull/5) |
+| V-D Observer | `feature/vd-pattern` | [#6](https://github.com/jtr120826/voyage/pull/6) |
+| V-A Security | `feature/va-security` | [#7](https://github.com/jtr120826/voyage/pull/7), Korrektur [#8](https://github.com/jtr120826/voyage/pull/8) |
+| K5 Git | `feature/k5-git` | [#9](https://github.com/jtr120826/voyage/pull/9) |
+
+Anzeigen: `git log --graph --oneline`.
+
+**B1 Verlauf aufräumen:** K1 bis K4 sind schon über Branch-Namen und Merge-Commits erkennbar, ein rückwirkendes Umbenennen war nicht nötig (und hätte den Verlauf auf dem Server umgeschrieben). K0 liegt als einzelner Commit direkt auf `main`.
+
+**B2 Secrets:** Die gesamte Historie wurde durchsucht (Dateinamen und alle hinzugefügten Zeilen nach Passwort, Secret, Token, Connection String, `.db`, `.env`, `appsettings`). Ergebnis: Es steht kein Secret im Verlauf. Die einzige Connection String ist `Data Source=app.db`, ein relativer Dateipfad ohne Zugangsdaten. Die App hat keine `appsettings.json`, deshalb gibt es auch keine `appsettings.Example.json`. Vorsorglich schliesst die `.gitignore` jetzt `appsettings.json`, `.env`, Schlüsseldateien und alle SQLite-Dateien aus, die Datei `appsettings.Example.json` bleibt erlaubt.
+
+**B3 Pull-Request-Workflow:** Jeder Schritt lief über einen eigenen Branch und einen Pull Request mit Beschreibung (Was, Warum, Worauf achten) und eingetragenem Reviewer jtr120826. Ehrlich: Weil der Partner abwesend war, wurden PR #1 bis #8 auf unseren Wunsch ohne Review gemerged. Das Vier-Augen-Prinzip der Folien wurde dort nicht erfüllt. Er kann die PRs nachträglich ansehen und kommentieren.
+
+**B4 Merge-Konflikt:** Dieselbe Zeile der README-Einleitung wurde auf zwei Branches geändert (`feature/k5-konflikt-a`: "(lokal mit SQLite)", `feature/k5-konflikt-b`: "Desktop-App (WPF, .NET 10)"). Beim Merge meldete Git den Konflikt in `README.md`. **Gewählt:** beide Änderungen kombiniert. **Warum:** Sie schliessen sich nicht aus, jede liefert eine eigene Information (Speicherart, Technik). Eine Seite zu nehmen hätte die andere verworfen. Gelöst von Hand im Editor (Marker entfernt, Zeile zusammengesetzt), das Mergetool war nicht nötig.
+
 ## Stand
 
 | Einheit | Status |
@@ -134,7 +160,7 @@ MainWindow (UI)  →  Services  →  Repositories  →  EF Core / SQLite
 | Bearbeiten-Funktion (vollständiges CRUD) | abgeschlossen (PR #5) |
 | V-D Design Patterns (Observer) | abgeschlossen (PR #6) |
 | V-A Security und Authentication | abgeschlossen |
-| K5 | offen |
+| K5 – Git und Kollaboration | abgeschlossen (PR #9) |
 
 ## Tech-Stack
 
