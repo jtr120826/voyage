@@ -17,6 +17,12 @@ public class ProgrammpunktService
     }
 
     /// <summary>
+    /// Wird ausgelöst, nachdem sich Programmpunkte geändert haben (hinzugefügt, bearbeitet, erledigt umgeschaltet
+    /// oder gelöscht). Auch die Budgetwerte der Reisen ändern sich dadurch.
+    /// </summary>
+    public event EventHandler? DatenGeaendert;
+
+    /// <summary>
     /// Lädt alle Programmpunkte einer Reise als DTOs.
     /// </summary>
     public List<ProgrammpunktDto> LadeProgrammpunkte(int reiseId)
@@ -35,6 +41,7 @@ public class ProgrammpunktService
         UebernehmeWerte(programmpunktDto, programmpunkt);
 
         _repository.Add(programmpunkt);
+        MeldeAenderung();
     }
 
     /// <summary>
@@ -49,6 +56,7 @@ public class ProgrammpunktService
 
         UebernehmeWerte(programmpunktDto, programmpunkt);
         _repository.Update(programmpunkt);
+        MeldeAenderung();
     }
 
     /// <summary>
@@ -62,12 +70,19 @@ public class ProgrammpunktService
 
         programmpunkt.Erledigt = !programmpunkt.Erledigt;
         _repository.Update(programmpunkt);
+        MeldeAenderung();
     }
 
     /// <summary>
     /// Löscht den Programmpunkt mit der angegebenen Id.
     /// </summary>
-    public void Loeschen(int id) => _repository.Delete(id);
+    public void Loeschen(int id)
+    {
+        _repository.Delete(id);
+        MeldeAenderung();
+    }
+
+    private void MeldeAenderung() => DatenGeaendert?.Invoke(this, EventArgs.Empty);
 
     private static void UebernehmeWerte(ProgrammpunktDto programmpunktDto, Programmpunkt programmpunkt)
     {

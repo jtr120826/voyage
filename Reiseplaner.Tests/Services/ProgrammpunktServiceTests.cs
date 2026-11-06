@@ -288,6 +288,87 @@ public class ProgrammpunktServiceTests
         Assert.Single(repository.Programmpunkte);
     }
 
+    [Fact]
+    public void Hinzufuegen_GueltigesDto_LoestDatenGeaendertAus()
+    {
+        // Arrange
+        var service = new ProgrammpunktService(new FakeProgrammpunktRepository());
+        var anzahlMeldungen = 0;
+        service.DatenGeaendert += (_, _) => anzahlMeldungen++;
+
+        // Act
+        service.Hinzufuegen(1, new ProgrammpunktDto { Titel = "Zug nach Porto" });
+
+        // Assert
+        Assert.Equal(1, anzahlMeldungen);
+    }
+
+    [Fact]
+    public void Aktualisieren_ExistierenderProgrammpunkt_LoestDatenGeaendertAus()
+    {
+        // Arrange
+        var repository = new FakeProgrammpunktRepository();
+        repository.Programmpunkte.Add(ErstelleProgrammpunkt(id: 1, reiseId: 1, erledigt: false));
+        var service = new ProgrammpunktService(repository);
+        var anzahlMeldungen = 0;
+        service.DatenGeaendert += (_, _) => anzahlMeldungen++;
+
+        // Act
+        service.Aktualisieren(new ProgrammpunktDto { Id = 1, Titel = "Geändert" });
+
+        // Assert
+        Assert.Equal(1, anzahlMeldungen);
+    }
+
+    [Fact]
+    public void ErledigtUmschalten_ExistierenderProgrammpunkt_LoestDatenGeaendertAus()
+    {
+        // Arrange
+        var repository = new FakeProgrammpunktRepository();
+        repository.Programmpunkte.Add(ErstelleProgrammpunkt(id: 1, reiseId: 1, erledigt: false));
+        var service = new ProgrammpunktService(repository);
+        var anzahlMeldungen = 0;
+        service.DatenGeaendert += (_, _) => anzahlMeldungen++;
+
+        // Act
+        service.ErledigtUmschalten(1);
+
+        // Assert
+        Assert.Equal(1, anzahlMeldungen);
+    }
+
+    [Fact]
+    public void ErledigtUmschalten_NichtExistierendeId_LoestKeinDatenGeaendertAus()
+    {
+        // Arrange
+        var service = new ProgrammpunktService(new FakeProgrammpunktRepository());
+        var anzahlMeldungen = 0;
+        service.DatenGeaendert += (_, _) => anzahlMeldungen++;
+
+        // Act
+        service.ErledigtUmschalten(999);
+
+        // Assert
+        Assert.Equal(0, anzahlMeldungen);
+    }
+
+    [Fact]
+    public void Loeschen_ExistierenderProgrammpunkt_LoestDatenGeaendertAus()
+    {
+        // Arrange
+        var repository = new FakeProgrammpunktRepository();
+        repository.Programmpunkte.Add(ErstelleProgrammpunkt(id: 1, reiseId: 1, erledigt: false));
+        var service = new ProgrammpunktService(repository);
+        var anzahlMeldungen = 0;
+        service.DatenGeaendert += (_, _) => anzahlMeldungen++;
+
+        // Act
+        service.Loeschen(1);
+
+        // Assert
+        Assert.Equal(1, anzahlMeldungen);
+    }
+
     private static Programmpunkt ErstelleProgrammpunkt(int id, int reiseId, bool erledigt)
     {
         return new Programmpunkt
