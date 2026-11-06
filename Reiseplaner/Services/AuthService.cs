@@ -10,7 +10,7 @@ namespace Reiseplaner.Services;
 /// </summary>
 public class AuthService
 {
-    public const int MindestlaengePasswort = 10;
+    public const int MindestlaengePasswort = 8;
 
     private readonly IBenutzerRepository _repository;
     private readonly PasswortHasher _hasher;
