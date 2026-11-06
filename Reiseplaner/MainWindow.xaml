@@ -102,12 +102,7 @@
                     <TextBlock x:Name="PunktTitelPlatzhalter" Text="Programmpunkt-Titel" Style="{StaticResource PlatzhalterOverlay}"/>
                 </Grid>
                 <DatePicker x:Name="PunktDatumPicker" Margin="0,2"/>
-                <ComboBox x:Name="KategorieBox" Margin="0,2">
-                    <ComboBoxItem Content="Sehenswürdigkeit"/>
-                    <ComboBoxItem Content="Transport"/>
-                    <ComboBoxItem Content="Unterkunft"/>
-                    <ComboBoxItem Content="Essen"/>
-                </ComboBox>
+                <ComboBox x:Name="KategorieBox" Margin="0,2"/>
                 <Grid Margin="0,2">
                     <TextBox x:Name="KostenBox" TextChanged="PlatzhalterAktualisieren"/>
                     <TextBlock x:Name="KostenPlatzhalter" Text="Kosten (CHF)" Style="{StaticResource PlatzhalterOverlay}"/>
