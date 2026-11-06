@@ -1,28 +1,60 @@
 using Reiseplaner.DataAccess;
+using Reiseplaner.Dtos;
 using Reiseplaner.Models;
 
 namespace Reiseplaner.Services;
 
 public class ProgrammpunktService
 {
-    private readonly ProgrammpunktDataAccess _dataAccess = new();
+    private readonly IProgrammpunktRepository _repository;
 
-    public List<Programmpunkt> GetByReise(int reiseId) => _dataAccess.GetByReise(reiseId);
-
-    public void Hinzufuegen(Programmpunkt punkt) => _dataAccess.Add(punkt);
-
-    // Business-Entscheidung "was passiert" (Umschalten des Status) gehört in den Service,
-    // nicht ins Code-Behind - die UI kennt nur noch den Wunsch "toggle", nicht die Logik dahinter.
-    public void ErledigtUmschalten(Programmpunkt punkt) => _dataAccess.SetErledigt(punkt.Id, !punkt.Erledigt);
-
-    public void Loeschen(int id) => _dataAccess.Delete(id);
-
-    // Berechnung (Business-Logik): wie viel einer Reise-Budgets ist durch die Programmpunkte
-    // bereits verplant, und ist das Budget überschritten?
-    public BudgetStatus BerechneBudgetStatus(Reise reise, List<Programmpunkt> punkte)
+    public ProgrammpunktService(IProgrammpunktRepository repository)
     {
-        var ausgegeben = punkte.Sum(p => p.Kosten);
-        var rest = reise.Budget - ausgegeben;
-        return new BudgetStatus(ausgegeben, rest, rest < 0);
+        _repository = repository;
+    }
+
+    public List<ProgrammpunktDto> GetByReise(int reiseId)
+    {
+        return _repository.GetByReise(reiseId)
+            .Select(ErstelleDto)
+            .ToList();
+    }
+
+    public void Hinzufuegen(int reiseId, ProgrammpunktDto programmpunktDto)
+    {
+        var programmpunkt = new Programmpunkt
+        {
+            Titel = programmpunktDto.Titel,
+            Datum = programmpunktDto.Datum,
+            Kategorie = programmpunktDto.Kategorie,
+            Kosten = programmpunktDto.Kosten,
+            ReiseId = reiseId
+        };
+
+        _repository.Add(programmpunkt);
+    }
+
+    public void ErledigtUmschalten(int programmpunktId)
+    {
+        var programmpunkt = _repository.GetById(programmpunktId);
+        if (programmpunkt == null) return;
+
+        programmpunkt.Erledigt = !programmpunkt.Erledigt;
+        _repository.Update(programmpunkt);
+    }
+
+    public void Loeschen(int id) => _repository.Delete(id);
+
+    private static ProgrammpunktDto ErstelleDto(Programmpunkt programmpunkt)
+    {
+        return new ProgrammpunktDto
+        {
+            Id = programmpunkt.Id,
+            Titel = programmpunkt.Titel,
+            Datum = programmpunkt.Datum,
+            Kategorie = programmpunkt.Kategorie,
+            Kosten = programmpunkt.Kosten,
+            Erledigt = programmpunkt.Erledigt
+        };
     }
 }
