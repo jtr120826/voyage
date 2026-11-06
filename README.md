@@ -1,13 +1,14 @@
 # Reiseplaner
 
 WPF-Desktop-App zur Planung von Reisen mit Programmpunkten und Budget-Überwachung.
-Entstanden im Modul PROG1 (gibb) als laufendes Projekt über K0–K4.
+Entstanden im Modul PROG1 (gibb) als laufendes Projekt über K0–K4 und die Vertiefungen V-A und V-D.
 
 ## Funktionen
 
 - **Reisen verwalten**: anlegen, bearbeiten, löschen (Titel, Zielort, Start-/Enddatum, Budget)
 - **Programmpunkte** pro Reise: anlegen, bearbeiten, löschen, als *erledigt* markieren (Titel, Datum, Kategorie, Kosten)
 - **Budget-Übersicht**: Geplantes und Verbleibendes Budget stehen direkt in der Reisen-Liste und werden live aktualisiert; Warnung bei Überschreitung
+- **Anmeldung mit Rollen**: Leser, Sachbearbeiter, Administrator (siehe V-A)
 - **Eingabefelder** mit Platzhaltertext (z. B. "Reisetitel"), der beim Tippen verschwindet
 
 ## Projektstruktur
@@ -15,7 +16,7 @@ Entstanden im Modul PROG1 (gibb) als laufendes Projekt über K0–K4.
 ```
 Reiseplaner.sln
 ├── Reiseplaner/          WPF-App (.NET 10)
-└── Reiseplaner.Tests/    xUnit-Tests (38 Tests)
+└── Reiseplaner.Tests/    xUnit-Tests (91 Tests)
 ```
 
 Starten: `Reiseplaner.sln` in Visual Studio öffnen, Startprojekt `Reiseplaner`. Tests: Test-Explorer oder `dotnet test`.
@@ -23,6 +24,7 @@ Starten: `Reiseplaner.sln` in Visual Studio öffnen, Startprojekt `Reiseplaner`.
 ## Datenmodell
 
 - `Reise` (1) → `Programmpunkt` (N) als EF-Core-Navigation-Property, verknüpft über `ReiseId`
+- `Benutzer` (Benutzername eindeutig, Passwort-Hash, Salt, Iterationen, Rolle), ohne Verknüpfung zu Reisen
 - Speicherung lokal in SQLite (`app.db`, nicht im Repo – wird beim ersten Start per EF-Core-Migration erzeugt)
 
 ## Architektur
@@ -32,9 +34,9 @@ MainWindow (UI)  →  Services  →  Repositories  →  EF Core / SQLite
       ↑ DTOs ↑          (Mapping Entity ↔ DTO)
 ```
 
-- `Dtos/`: `ReiseDto`, `ProgrammpunktDto` – die UI sieht nur DTOs, keine Entities
-- `Services/`: `ReiseService`, `ProgrammpunktService` – Business-Logik (Budget-Berechnung, Erledigt-Umschalten) und Mapping
-- `DataAccess/`: `IRepository<T>`, `IProgrammpunktRepository`, generische Basisklasse `Repository<T>`, `ReiseRepository`, `ProgrammpunktRepository`, `AppDbContext`
+- `Dtos/`: `ReiseDto`, `ProgrammpunktDto`, `BenutzerDto` – die UI sieht nur DTOs, keine Entities
+- `Services/`: `ReiseService`, `ProgrammpunktService` – Business-Logik (Budget-Berechnung, Erledigt-Umschalten), Mapping und Berechtigungsprüfung; `AuthService`, `PasswortHasher`, `BenutzerSitzung`, `Berechtigungen` (V-A)
+- `DataAccess/`: `IRepository<T>`, `IProgrammpunktRepository`, `IBenutzerRepository`, generische Basisklasse `Repository<T>`, `ReiseRepository`, `ProgrammpunktRepository`, `BenutzerRepository`, `AppDbContext`
 - `Models/`: Entity-Klassen und `Kategorien`, `Migrations/`: EF-Core-Migrationen
 - `App.xaml.cs`: erzeugt die Repositories und übergibt sie per Konstruktor an die Services (Dependency Injection); die Services kennen nur Interfaces
 
@@ -71,6 +73,43 @@ MainWindow (UI)  →  Services  →  Repositories  →  EF Core / SQLite
 
 ## Vertiefungen
 
+### V-A Security und Authentication
+
+**Anmeldung:** Beim Start erscheint ein Login (`LoginWindow`). Gibt es noch kein Konto, legt die App stattdessen den **ersten Administrator** an (Ersteinrichtung). Es gibt kein eingebautes Standardkonto und kein Standardpasswort. Weitere Konten legen Administratoren über "Benutzer anlegen" an (keine Selbstregistrierung). Passwort: mindestens 10 Zeichen, Benutzernamen sind eindeutig (ohne Gross-/Kleinschreibung).
+
+**Passwort-Hashing:** PBKDF2-HMAC-SHA256 mit **600 000 Iterationen**, 16 Byte Zufalls-Salt pro Passwort, 32 Byte Hash (`PasswortHasher`, .NET `Rfc2898DeriveBytes.Pbkdf2`). Gespeichert werden nur Hash, Salt und Iterationszahl (Spalten in `Benutzer`), nie das Passwort. Der Vergleich läuft mit `CryptographicOperations.FixedTimeEquals` (kein Timing-Leck).
+- **Warum PBKDF2 und nicht bcrypt/Argon2?** Argon2id wäre laut OWASP die erste Wahl, ist aber nicht in .NET eingebaut und bräuchte ein zusätzliches Paket. PBKDF2 ist in .NET enthalten (keine Fremdbibliothek, kein eigener Kryptocode) und bei OWASP als Option aufgeführt.
+- **OWASP-Prüfung:** Die Zahl 600 000 für PBKDF2-HMAC-SHA256 wurde am Password Storage Cheat Sheet von OWASP nachgeprüft (nicht aus dem Gedächtnis der KI übernommen). Test: `StandardIterationen >= 600_000`.
+- **Iterationen pro Benutzer gespeichert:** So lässt sich der Wert später erhöhen, ohne bestehende Konten zu sperren.
+
+**Rollen und Rechte (RBAC):**
+
+| Recht | Leser | Sachbearbeiter | Administrator |
+|---|---|---|---|
+| Ansehen | ja | ja | ja |
+| Bearbeiten (Hinzufügen, Ändern, Erledigt) | nein | ja | ja |
+| Löschen | nein | nein | ja |
+| Benutzer verwalten | nein | nein | ja |
+
+**Wo wird geprüft?** Im **Service**, nicht nur in der Oberfläche. Jede Methode von `ReiseService` und `ProgrammpunktService` ruft zuerst `IBenutzerSitzung.Pruefe(Recht)` auf und wirft sonst `UnauthorizedAccessException` (ohne Anmeldung ebenso). Die Tabelle steht an genau einer Stelle (`Berechtigungen.IstErlaubt`). Die Oberfläche sperrt Schaltflächen nur als Komfort. Beweis: `ServiceBerechtigungTests` rufen die Services direkt auf, ganz ohne Oberfläche.
+
+**Weitere Schutzmassnahmen:**
+- Falscher Benutzername und falsches Passwort geben dieselbe Meldung ("Benutzername oder Passwort ist falsch."), damit niemand Benutzernamen erraten kann
+- `BenutzerDto` enthält weder Hash noch Salt, diese verlassen die Datenzugriffsschicht nie
+- Keine Klartext-Passwörter in Code, Logs, Debug-Ausgaben oder Tests: Tests erzeugen ihre Passwörter zur Laufzeit zufällig (`Guid`), es steht kein Passwort im Repo; die Datenbank (`app.db`) ist per `.gitignore` ausgeschlossen
+- Datenbankzugriff nur über EF Core (parametrisierte Abfragen, keine SQL-Injection)
+
+**OWASP-Bezug:** A01 Broken Access Control (Prüfung im Service, nicht nur in der UI), A02 Cryptographic Failures (gesalzener, langsamer Hash statt Klartext), A07 Identification and Authentication Failures (Passwortlänge, kein Standardpasswort, generische Fehlermeldung), A03 Injection (EF Core).
+
+**Bekannte Grenzen (bewusst nicht umgesetzt):**
+- Keine Sperre nach mehreren Fehlversuchen (kein Brute-Force-Schutz)
+- Bei unbekanntem Benutzer wird kein Dummy-Hash berechnet, die Antwortzeit verrät also theoretisch, ob es den Namen gibt
+- Die SQLite-Datei ist nicht verschlüsselt: Wer die Datei hat, kann Reisedaten lesen und die Hashes angreifen. Die Rollen schützen nur die Bedienung über die App
+- Kein automatisches Erneuern alter Hashes beim Login (die Iterationen sind gespeichert, der Mechanismus wäre vorbereitet)
+- Kein Passwort ändern/zurücksetzen und kein Löschen von Benutzern. Daten gehören nicht einzelnen Benutzern: Die Rollen gelten für alle Reisen gleich, wie in der Aufgabe vorgegeben
+
+**Tests:** 53 neue Tests (91 insgesamt): `PasswortHasherTests`, `BenutzerSitzungTests` (komplette Rollen-Rechte-Matrix), `AuthServiceTests`, `ServiceBerechtigungTests`. Gegenproben: Recht in `Berechtigungen` aufgeweicht, Salt konstant gemacht, Prüfungen in Services und `AuthService` entfernt, jeweils schlugen Tests fehl. Zusätzlich ein Ende-zu-Ende-Test der Oberfläche (34 Prüfungen, u. a. Ersteinrichtung, alle drei Rollen, Passwort nicht im Klartext in der Datenbankdatei).
+
 ### V-D Design Patterns: Observer
 
 **Problem vorher:** Nach jeder Änderung musste das `MainWindow` von Hand die Liste neu laden, an 7 Stellen, und zwar in zwei uneinheitlichen Varianten (`ReisenLaden` und `ReisenAktualisierenMitAuswahl`). Wer eine neue Aktion ergänzte, konnte das Neuladen vergessen, und die Anzeige zeigte veraltete Werte.
@@ -93,9 +132,10 @@ MainWindow (UI)  →  Services  →  Repositories  →  EF Core / SQLite
 | K3 – Interfaces, Repository, DTOs | abgeschlossen (PR #3) |
 | K4 – Clean Code und Unit Tests | abgeschlossen (PR #4) |
 | Bearbeiten-Funktion (vollständiges CRUD) | abgeschlossen (PR #5) |
-| V-D Design Patterns (Observer) | abgeschlossen |
+| V-D Design Patterns (Observer) | abgeschlossen (PR #6) |
+| V-A Security und Authentication | abgeschlossen |
 | K5 | offen |
 
 ## Tech-Stack
 
-.NET 10, WPF, Entity Framework Core (SQLite-Provider), SQLite, xUnit
+.NET 10, WPF, Entity Framework Core (SQLite-Provider), SQLite, xUnit, `System.Security.Cryptography` (PBKDF2)

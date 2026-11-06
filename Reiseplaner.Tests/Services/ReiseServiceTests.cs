@@ -2,6 +2,7 @@ using Reiseplaner.Dtos;
 using Reiseplaner.Models;
 using Reiseplaner.Services;
 using Reiseplaner.Tests.Fakes;
+using Reiseplaner.Tests.Hilfsmittel;
 
 namespace Reiseplaner.Tests.Services;
 
@@ -13,7 +14,7 @@ public class ReiseServiceTests
         // Arrange
         var repository = new FakeReiseRepository();
         repository.Reisen.Add(ErstelleReise(id: 1, budget: 1000m, kosten: [200m, 300m]));
-        var service = new ReiseService(repository);
+        var service = new ReiseService(repository, TestDaten.SitzungAls(Rolle.Administrator));
 
         // Act
         var reisen = service.LadeAlle();
@@ -31,7 +32,7 @@ public class ReiseServiceTests
         // Arrange
         var repository = new FakeReiseRepository();
         repository.Reisen.Add(ErstelleReise(id: 1, budget: 100m, kosten: [150m]));
-        var service = new ReiseService(repository);
+        var service = new ReiseService(repository, TestDaten.SitzungAls(Rolle.Administrator));
 
         // Act
         var reise = Assert.Single(service.LadeAlle());
@@ -47,7 +48,7 @@ public class ReiseServiceTests
         // Arrange
         var repository = new FakeReiseRepository();
         repository.Reisen.Add(ErstelleReise(id: 1, budget: 100m, kosten: [60m, 40m]));
-        var service = new ReiseService(repository);
+        var service = new ReiseService(repository, TestDaten.SitzungAls(Rolle.Administrator));
 
         // Act
         var reise = Assert.Single(service.LadeAlle());
@@ -63,7 +64,7 @@ public class ReiseServiceTests
         // Arrange
         var repository = new FakeReiseRepository();
         repository.Reisen.Add(ErstelleReise(id: 1, budget: 800m, kosten: []));
-        var service = new ReiseService(repository);
+        var service = new ReiseService(repository, TestDaten.SitzungAls(Rolle.Administrator));
 
         // Act
         var reise = Assert.Single(service.LadeAlle());
@@ -77,7 +78,7 @@ public class ReiseServiceTests
     public void LadeAlle_KeineReisenVorhanden_GibtLeereListeZurueck()
     {
         // Arrange
-        var service = new ReiseService(new FakeReiseRepository());
+        var service = new ReiseService(new FakeReiseRepository(), TestDaten.SitzungAls(Rolle.Administrator));
 
         // Act
         var reisen = service.LadeAlle();
@@ -100,7 +101,7 @@ public class ReiseServiceTests
             Enddatum = "2026-11-17",
             Budget = 1200m
         });
-        var service = new ReiseService(repository);
+        var service = new ReiseService(repository, TestDaten.SitzungAls(Rolle.Administrator));
 
         // Act
         var reise = Assert.Single(service.LadeAlle());
@@ -119,7 +120,7 @@ public class ReiseServiceTests
     {
         // Arrange
         var repository = new FakeReiseRepository();
-        var service = new ReiseService(repository);
+        var service = new ReiseService(repository, TestDaten.SitzungAls(Rolle.Administrator));
         var dto = new ReiseDto
         {
             Titel = "Japan",
@@ -147,7 +148,7 @@ public class ReiseServiceTests
         // Arrange
         var repository = new FakeReiseRepository();
         repository.Reisen.Add(ErstelleReise(id: 1, budget: 100m, kosten: []));
-        var service = new ReiseService(repository);
+        var service = new ReiseService(repository, TestDaten.SitzungAls(Rolle.Administrator));
         var dto = new ReiseDto
         {
             Id = 1,
@@ -176,7 +177,7 @@ public class ReiseServiceTests
         // Arrange
         var repository = new FakeReiseRepository();
         repository.Reisen.Add(ErstelleReise(id: 1, budget: 100m, kosten: [30m, 20m]));
-        var service = new ReiseService(repository);
+        var service = new ReiseService(repository, TestDaten.SitzungAls(Rolle.Administrator));
         var dto = new ReiseDto { Id = 1, Titel = "Geändert", Zielort = "Ort", Startdatum = "2026-01-01", Enddatum = "2026-01-02", Budget = 500m };
 
         // Act
@@ -195,7 +196,7 @@ public class ReiseServiceTests
         var repository = new FakeReiseRepository();
         repository.Reisen.Add(ErstelleReise(id: 1, budget: 100m, kosten: []));
         repository.Reisen.Add(ErstelleReise(id: 2, budget: 200m, kosten: []));
-        var service = new ReiseService(repository);
+        var service = new ReiseService(repository, TestDaten.SitzungAls(Rolle.Administrator));
         var dto = new ReiseDto { Id = 2, Titel = "Geändert", Zielort = "Ort", Startdatum = "2026-01-01", Enddatum = "2026-01-02", Budget = 250m };
 
         // Act
@@ -212,7 +213,7 @@ public class ReiseServiceTests
         // Arrange
         var repository = new FakeReiseRepository();
         repository.Reisen.Add(ErstelleReise(id: 1, budget: 100m, kosten: []));
-        var service = new ReiseService(repository);
+        var service = new ReiseService(repository, TestDaten.SitzungAls(Rolle.Administrator));
         var dto = new ReiseDto { Id = 999, Titel = "Gibt es nicht" };
 
         // Act
@@ -231,7 +232,7 @@ public class ReiseServiceTests
         var repository = new FakeReiseRepository();
         repository.Reisen.Add(ErstelleReise(id: 1, budget: 100m, kosten: []));
         repository.Reisen.Add(ErstelleReise(id: 2, budget: 200m, kosten: []));
-        var service = new ReiseService(repository);
+        var service = new ReiseService(repository, TestDaten.SitzungAls(Rolle.Administrator));
 
         // Act
         service.Loeschen(1);
@@ -247,7 +248,7 @@ public class ReiseServiceTests
         // Arrange
         var repository = new FakeReiseRepository();
         repository.Reisen.Add(ErstelleReise(id: 1, budget: 100m, kosten: []));
-        var service = new ReiseService(repository);
+        var service = new ReiseService(repository, TestDaten.SitzungAls(Rolle.Administrator));
 
         // Act
         var fehler = Record.Exception(() => service.Loeschen(999));
@@ -261,7 +262,7 @@ public class ReiseServiceTests
     public void Hinzufuegen_GueltigesDto_LoestDatenGeaendertAus()
     {
         // Arrange
-        var service = new ReiseService(new FakeReiseRepository());
+        var service = new ReiseService(new FakeReiseRepository(), TestDaten.SitzungAls(Rolle.Administrator));
         var anzahlMeldungen = 0;
         service.DatenGeaendert += (_, _) => anzahlMeldungen++;
 
@@ -278,7 +279,7 @@ public class ReiseServiceTests
         // Arrange
         var repository = new FakeReiseRepository();
         repository.Reisen.Add(ErstelleReise(id: 1, budget: 100m, kosten: []));
-        var service = new ReiseService(repository);
+        var service = new ReiseService(repository, TestDaten.SitzungAls(Rolle.Administrator));
         var anzahlMeldungen = 0;
         service.DatenGeaendert += (_, _) => anzahlMeldungen++;
 
@@ -293,7 +294,7 @@ public class ReiseServiceTests
     public void Aktualisieren_NichtExistierendeId_LoestKeinDatenGeaendertAus()
     {
         // Arrange
-        var service = new ReiseService(new FakeReiseRepository());
+        var service = new ReiseService(new FakeReiseRepository(), TestDaten.SitzungAls(Rolle.Administrator));
         var anzahlMeldungen = 0;
         service.DatenGeaendert += (_, _) => anzahlMeldungen++;
 
@@ -310,7 +311,7 @@ public class ReiseServiceTests
         // Arrange
         var repository = new FakeReiseRepository();
         repository.Reisen.Add(ErstelleReise(id: 1, budget: 100m, kosten: []));
-        var service = new ReiseService(repository);
+        var service = new ReiseService(repository, TestDaten.SitzungAls(Rolle.Administrator));
         var anzahlMeldungen = 0;
         service.DatenGeaendert += (_, _) => anzahlMeldungen++;
 
@@ -325,7 +326,7 @@ public class ReiseServiceTests
     public void DatenGeaendert_ZweiUnabhaengigeAbonnenten_WerdenBeideBenachrichtigt()
     {
         // Arrange
-        var service = new ReiseService(new FakeReiseRepository());
+        var service = new ReiseService(new FakeReiseRepository(), TestDaten.SitzungAls(Rolle.Administrator));
         var erster = 0;
         var zweiter = 0;
         service.DatenGeaendert += (_, _) => erster++;

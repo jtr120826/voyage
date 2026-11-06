@@ -2,6 +2,7 @@ using Reiseplaner.Dtos;
 using Reiseplaner.Models;
 using Reiseplaner.Services;
 using Reiseplaner.Tests.Fakes;
+using Reiseplaner.Tests.Hilfsmittel;
 
 namespace Reiseplaner.Tests.Services;
 
@@ -13,7 +14,7 @@ public class ProgrammpunktServiceTests
         // Arrange
         var repository = new FakeProgrammpunktRepository();
         repository.Programmpunkte.Add(ErstelleProgrammpunkt(id: 1, reiseId: 1, erledigt: false));
-        var service = new ProgrammpunktService(repository);
+        var service = new ProgrammpunktService(repository, TestDaten.SitzungAls(Rolle.Administrator));
 
         // Act
         service.ErledigtUmschalten(1);
@@ -29,7 +30,7 @@ public class ProgrammpunktServiceTests
         // Arrange
         var repository = new FakeProgrammpunktRepository();
         repository.Programmpunkte.Add(ErstelleProgrammpunkt(id: 1, reiseId: 1, erledigt: true));
-        var service = new ProgrammpunktService(repository);
+        var service = new ProgrammpunktService(repository, TestDaten.SitzungAls(Rolle.Administrator));
 
         // Act
         service.ErledigtUmschalten(1);
@@ -45,7 +46,7 @@ public class ProgrammpunktServiceTests
         // Arrange
         var repository = new FakeProgrammpunktRepository();
         repository.Programmpunkte.Add(ErstelleProgrammpunkt(id: 1, reiseId: 1, erledigt: false));
-        var service = new ProgrammpunktService(repository);
+        var service = new ProgrammpunktService(repository, TestDaten.SitzungAls(Rolle.Administrator));
 
         // Act
         service.ErledigtUmschalten(1);
@@ -62,7 +63,7 @@ public class ProgrammpunktServiceTests
         var repository = new FakeProgrammpunktRepository();
         repository.Programmpunkte.Add(ErstelleProgrammpunkt(id: 1, reiseId: 1, erledigt: false));
         repository.Programmpunkte.Add(ErstelleProgrammpunkt(id: 2, reiseId: 1, erledigt: false));
-        var service = new ProgrammpunktService(repository);
+        var service = new ProgrammpunktService(repository, TestDaten.SitzungAls(Rolle.Administrator));
 
         // Act
         service.ErledigtUmschalten(2);
@@ -78,7 +79,7 @@ public class ProgrammpunktServiceTests
         // Arrange
         var repository = new FakeProgrammpunktRepository();
         repository.Programmpunkte.Add(ErstelleProgrammpunkt(id: 1, reiseId: 1, erledigt: false));
-        var service = new ProgrammpunktService(repository);
+        var service = new ProgrammpunktService(repository, TestDaten.SitzungAls(Rolle.Administrator));
 
         // Act
         var fehler = Record.Exception(() => service.ErledigtUmschalten(999));
@@ -96,7 +97,7 @@ public class ProgrammpunktServiceTests
         repository.Programmpunkte.Add(ErstelleProgrammpunkt(id: 1, reiseId: 1, erledigt: false));
         repository.Programmpunkte.Add(ErstelleProgrammpunkt(id: 2, reiseId: 2, erledigt: false));
         repository.Programmpunkte.Add(ErstelleProgrammpunkt(id: 3, reiseId: 1, erledigt: false));
-        var service = new ProgrammpunktService(repository);
+        var service = new ProgrammpunktService(repository, TestDaten.SitzungAls(Rolle.Administrator));
 
         // Act
         var programmpunkte = service.LadeProgrammpunkte(1);
@@ -111,7 +112,7 @@ public class ProgrammpunktServiceTests
         // Arrange
         var repository = new FakeProgrammpunktRepository();
         repository.Programmpunkte.Add(ErstelleProgrammpunkt(id: 1, reiseId: 1, erledigt: false));
-        var service = new ProgrammpunktService(repository);
+        var service = new ProgrammpunktService(repository, TestDaten.SitzungAls(Rolle.Administrator));
 
         // Act
         var programmpunkte = service.LadeProgrammpunkte(42);
@@ -135,7 +136,7 @@ public class ProgrammpunktServiceTests
             Erledigt = true,
             ReiseId = 1
         });
-        var service = new ProgrammpunktService(repository);
+        var service = new ProgrammpunktService(repository, TestDaten.SitzungAls(Rolle.Administrator));
 
         // Act
         var programmpunkt = Assert.Single(service.LadeProgrammpunkte(1));
@@ -154,7 +155,7 @@ public class ProgrammpunktServiceTests
     {
         // Arrange
         var repository = new FakeProgrammpunktRepository();
-        var service = new ProgrammpunktService(repository);
+        var service = new ProgrammpunktService(repository, TestDaten.SitzungAls(Rolle.Administrator));
         var dto = new ProgrammpunktDto
         {
             Titel = "Zug nach Porto",
@@ -182,7 +183,7 @@ public class ProgrammpunktServiceTests
         // Arrange
         var repository = new FakeProgrammpunktRepository();
         repository.Programmpunkte.Add(ErstelleProgrammpunkt(id: 1, reiseId: 1, erledigt: false));
-        var service = new ProgrammpunktService(repository);
+        var service = new ProgrammpunktService(repository, TestDaten.SitzungAls(Rolle.Administrator));
         var dto = new ProgrammpunktDto
         {
             Id = 1,
@@ -209,7 +210,7 @@ public class ProgrammpunktServiceTests
         // Arrange
         var repository = new FakeProgrammpunktRepository();
         repository.Programmpunkte.Add(ErstelleProgrammpunkt(id: 1, reiseId: 7, erledigt: true));
-        var service = new ProgrammpunktService(repository);
+        var service = new ProgrammpunktService(repository, TestDaten.SitzungAls(Rolle.Administrator));
         var dto = new ProgrammpunktDto { Id = 1, Titel = "Geändert", Datum = "2026-01-01", Kategorie = Kategorien.Essen, Kosten = 5m, Erledigt = false };
 
         // Act
@@ -228,7 +229,7 @@ public class ProgrammpunktServiceTests
         var repository = new FakeProgrammpunktRepository();
         repository.Programmpunkte.Add(ErstelleProgrammpunkt(id: 1, reiseId: 1, erledigt: false));
         repository.Programmpunkte.Add(ErstelleProgrammpunkt(id: 2, reiseId: 1, erledigt: false));
-        var service = new ProgrammpunktService(repository);
+        var service = new ProgrammpunktService(repository, TestDaten.SitzungAls(Rolle.Administrator));
         var dto = new ProgrammpunktDto { Id = 2, Titel = "Geändert", Datum = "2026-01-01", Kategorie = Kategorien.Essen, Kosten = 10m };
 
         // Act
@@ -245,7 +246,7 @@ public class ProgrammpunktServiceTests
         // Arrange
         var repository = new FakeProgrammpunktRepository();
         repository.Programmpunkte.Add(ErstelleProgrammpunkt(id: 1, reiseId: 1, erledigt: false));
-        var service = new ProgrammpunktService(repository);
+        var service = new ProgrammpunktService(repository, TestDaten.SitzungAls(Rolle.Administrator));
         var dto = new ProgrammpunktDto { Id = 999, Titel = "Gibt es nicht" };
 
         // Act
@@ -263,7 +264,7 @@ public class ProgrammpunktServiceTests
         var repository = new FakeProgrammpunktRepository();
         repository.Programmpunkte.Add(ErstelleProgrammpunkt(id: 1, reiseId: 1, erledigt: false));
         repository.Programmpunkte.Add(ErstelleProgrammpunkt(id: 2, reiseId: 1, erledigt: false));
-        var service = new ProgrammpunktService(repository);
+        var service = new ProgrammpunktService(repository, TestDaten.SitzungAls(Rolle.Administrator));
 
         // Act
         service.Loeschen(1);
@@ -278,7 +279,7 @@ public class ProgrammpunktServiceTests
         // Arrange
         var repository = new FakeProgrammpunktRepository();
         repository.Programmpunkte.Add(ErstelleProgrammpunkt(id: 1, reiseId: 1, erledigt: false));
-        var service = new ProgrammpunktService(repository);
+        var service = new ProgrammpunktService(repository, TestDaten.SitzungAls(Rolle.Administrator));
 
         // Act
         var fehler = Record.Exception(() => service.Loeschen(999));
@@ -292,7 +293,7 @@ public class ProgrammpunktServiceTests
     public void Hinzufuegen_GueltigesDto_LoestDatenGeaendertAus()
     {
         // Arrange
-        var service = new ProgrammpunktService(new FakeProgrammpunktRepository());
+        var service = new ProgrammpunktService(new FakeProgrammpunktRepository(), TestDaten.SitzungAls(Rolle.Administrator));
         var anzahlMeldungen = 0;
         service.DatenGeaendert += (_, _) => anzahlMeldungen++;
 
@@ -309,7 +310,7 @@ public class ProgrammpunktServiceTests
         // Arrange
         var repository = new FakeProgrammpunktRepository();
         repository.Programmpunkte.Add(ErstelleProgrammpunkt(id: 1, reiseId: 1, erledigt: false));
-        var service = new ProgrammpunktService(repository);
+        var service = new ProgrammpunktService(repository, TestDaten.SitzungAls(Rolle.Administrator));
         var anzahlMeldungen = 0;
         service.DatenGeaendert += (_, _) => anzahlMeldungen++;
 
@@ -326,7 +327,7 @@ public class ProgrammpunktServiceTests
         // Arrange
         var repository = new FakeProgrammpunktRepository();
         repository.Programmpunkte.Add(ErstelleProgrammpunkt(id: 1, reiseId: 1, erledigt: false));
-        var service = new ProgrammpunktService(repository);
+        var service = new ProgrammpunktService(repository, TestDaten.SitzungAls(Rolle.Administrator));
         var anzahlMeldungen = 0;
         service.DatenGeaendert += (_, _) => anzahlMeldungen++;
 
@@ -341,7 +342,7 @@ public class ProgrammpunktServiceTests
     public void ErledigtUmschalten_NichtExistierendeId_LoestKeinDatenGeaendertAus()
     {
         // Arrange
-        var service = new ProgrammpunktService(new FakeProgrammpunktRepository());
+        var service = new ProgrammpunktService(new FakeProgrammpunktRepository(), TestDaten.SitzungAls(Rolle.Administrator));
         var anzahlMeldungen = 0;
         service.DatenGeaendert += (_, _) => anzahlMeldungen++;
 
@@ -358,7 +359,7 @@ public class ProgrammpunktServiceTests
         // Arrange
         var repository = new FakeProgrammpunktRepository();
         repository.Programmpunkte.Add(ErstelleProgrammpunkt(id: 1, reiseId: 1, erledigt: false));
-        var service = new ProgrammpunktService(repository);
+        var service = new ProgrammpunktService(repository, TestDaten.SitzungAls(Rolle.Administrator));
         var anzahlMeldungen = 0;
         service.DatenGeaendert += (_, _) => anzahlMeldungen++;
 
