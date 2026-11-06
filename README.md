@@ -15,7 +15,7 @@ Entstanden im Modul PROG1 (gibb) als laufendes Projekt über K0–K4.
 ```
 Reiseplaner.sln
 ├── Reiseplaner/          WPF-App (.NET 10)
-└── Reiseplaner.Tests/    xUnit-Tests (28 Tests)
+└── Reiseplaner.Tests/    xUnit-Tests (38 Tests)
 ```
 
 Starten: `Reiseplaner.sln` in Visual Studio öffnen, Startprojekt `Reiseplaner`. Tests: Test-Explorer oder `dotnet test`.
@@ -67,7 +67,21 @@ MainWindow (UI)  →  Services  →  Repositories  →  EF Core / SQLite
 
 **Single Responsibility:** Die Klick-Handler im `MainWindow` haben das Formular geprüft, das DTO gebaut, den Service aufgerufen und das Formular geleert, alles in einer Methode. Jede dieser Aufgaben hat jetzt eine eigene Methode (`IstReiseFormularVollstaendig`, `LeseReiseAusFormular`, `LeereReiseFormular`), der Handler steuert nur noch den Ablauf. So lässt sich jede Aufgabe einzeln lesen und ändern, etwa wenn ein Formularfeld dazukommt. Die else-if-Kette für die Platzhalter ist durch ein `Dictionary` ersetzt.
 
-**Tests:** 28 xUnit-Tests für beide Services, ohne Datenbank dank Fake-Repositories (`Reiseplaner.Tests/Fakes`). Darunter Positivtests, Negativtests (nicht existierende Id) und Grenzfälle (Kosten genau am Budget). Das wäre ohne die Interfaces aus K3 nicht möglich gewesen: Die Services erzeugten ihr Repository früher selbst und hätten immer an der echten Datenbank gehangen.
+**Tests:** 38 xUnit-Tests für beide Services, ohne Datenbank dank Fake-Repositories (`Reiseplaner.Tests/Fakes`). Darunter Positivtests, Negativtests (nicht existierende Id) und Grenzfälle (Kosten genau am Budget). Das wäre ohne die Interfaces aus K3 nicht möglich gewesen: Die Services erzeugten ihr Repository früher selbst und hätten immer an der echten Datenbank gehangen.
+
+## Vertiefungen
+
+### V-D Design Patterns: Observer
+
+**Problem vorher:** Nach jeder Änderung musste das `MainWindow` von Hand die Liste neu laden, an 7 Stellen, und zwar in zwei uneinheitlichen Varianten (`ReisenLaden` und `ReisenAktualisierenMitAuswahl`). Wer eine neue Aktion ergänzte, konnte das Neuladen vergessen, und die Anzeige zeigte veraltete Werte.
+
+**Lösung:** `ReiseService` und `ProgrammpunktService` lösen nach jeder Änderung das C#-Event `DatenGeaendert` aus. Das `MainWindow` abonniert es einmal (`OnDatenGeaendert`). Die Services kennen ihre Abonnenten nicht und wissen nicht, was mit der Meldung passiert.
+
+**Alternative ohne Pattern:** Weiter nach jedem Service-Aufruf im Handler neu laden, wie vorher. Das ist solange verständlich, wie es nur ein Fenster gibt. Ehrlich eingeschätzt gibt es heute nur einen Abonnenten. Der Gewinn ist, dass das Neuladen nicht mehr vergessen werden kann und weitere Abonnenten (etwa eine Statistik oder ein Protokoll) ohne Änderung der Services dazukommen könnten.
+
+**Nicht gewählt:** Strategy (in der App gibt es keine if/else-Kette mit gleicher Signatur) und Factory Method (keine wachsenden Objektvarianten). Dort gäbe es kein echtes Problem, ein Pattern wäre Selbstzweck.
+
+**Tests:** 10 Tests prüfen das Event: Es kommt bei jeder Änderung, bei unbekannter Id nicht, und mehrere unabhängige Abonnenten werden alle informiert.
 
 ## Stand
 
@@ -78,7 +92,8 @@ MainWindow (UI)  →  Services  →  Repositories  →  EF Core / SQLite
 | K2 – ORM / EF Core | abgeschlossen (PR #2) |
 | K3 – Interfaces, Repository, DTOs | abgeschlossen (PR #3) |
 | K4 – Clean Code und Unit Tests | abgeschlossen (PR #4) |
-| Bearbeiten-Funktion (vollständiges CRUD) | abgeschlossen |
+| Bearbeiten-Funktion (vollständiges CRUD) | abgeschlossen (PR #5) |
+| V-D Design Patterns (Observer) | abgeschlossen |
 | K5 | offen |
 
 ## Tech-Stack
