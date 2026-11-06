@@ -31,16 +31,24 @@ public class ProgrammpunktService
     /// </summary>
     public void Hinzufuegen(int reiseId, ProgrammpunktDto programmpunktDto)
     {
-        var programmpunkt = new Programmpunkt
-        {
-            Titel = programmpunktDto.Titel,
-            Datum = programmpunktDto.Datum,
-            Kategorie = programmpunktDto.Kategorie,
-            Kosten = programmpunktDto.Kosten,
-            ReiseId = reiseId
-        };
+        var programmpunkt = new Programmpunkt { ReiseId = reiseId };
+        UebernehmeWerte(programmpunktDto, programmpunkt);
 
         _repository.Add(programmpunkt);
+    }
+
+    /// <summary>
+    /// Übernimmt Titel, Datum, Kategorie und Kosten aus dem DTO in den bestehenden Programmpunkt
+    /// mit derselben Id. Erledigt-Status und Reise bleiben unverändert.
+    /// Existiert der Programmpunkt nicht, passiert nichts.
+    /// </summary>
+    public void Aktualisieren(ProgrammpunktDto programmpunktDto)
+    {
+        var programmpunkt = _repository.GetById(programmpunktDto.Id);
+        if (programmpunkt == null) return;
+
+        UebernehmeWerte(programmpunktDto, programmpunkt);
+        _repository.Update(programmpunkt);
     }
 
     /// <summary>
@@ -60,6 +68,14 @@ public class ProgrammpunktService
     /// Löscht den Programmpunkt mit der angegebenen Id.
     /// </summary>
     public void Loeschen(int id) => _repository.Delete(id);
+
+    private static void UebernehmeWerte(ProgrammpunktDto programmpunktDto, Programmpunkt programmpunkt)
+    {
+        programmpunkt.Titel = programmpunktDto.Titel;
+        programmpunkt.Datum = programmpunktDto.Datum;
+        programmpunkt.Kategorie = programmpunktDto.Kategorie;
+        programmpunkt.Kosten = programmpunktDto.Kosten;
+    }
 
     private static ProgrammpunktDto ErstelleDto(Programmpunkt programmpunkt)
     {
