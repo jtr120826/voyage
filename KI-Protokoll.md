@@ -94,3 +94,18 @@
 - **Hat die KI etwas Veraltetes vorgeschlagen?** Nein, nicht in dieser Runde. Dass wir es geprüft haben, ist trotzdem der wichtige Teil.
 - **Wo hätte in K0–K5 schon eine Berechtigungsprüfung hingehört?** Überall dort, wo Daten verändert werden: `Hinzufuegen`, `Aktualisieren`, `Loeschen` und `ErledigtUmschalten` in beiden Services, ab den ersten Schreibzugriffen (K1/K2). Auch die Bearbeiten-Funktion (PR #5) war ohne Prüfung für jeden offen. Eine Prüfung nur in der Oberfläche hätte nicht gereicht, weil die Services ohne Klick aufrufbar sind (siehe `ServiceBerechtigungTests`).
 - **Offen gelassen (ehrlich):** Keine Sperre nach Fehlversuchen, unverschlüsselte Datenbankdatei, Daten gehören nicht einzelnen Benutzern. Steht so im README.
+
+## K5 Git und Kollaboration
+
+| Datum | Prompt (kurz) | Nützlich | Korrigiert / falsch |
+|---|---|---|---|
+| 06.11. | K5-Unterlage angehängt: Aufgaben B1 bis B4 umsetzen | Die KI las die Folien und prüfte zuerst den Ist-Zustand, bevor sie etwas änderte: `git log --graph` zeigte K1 bis K4 schon als Branches mit Merge-Commits. Ein rückwirkendes Umbenennen wurde bewusst nicht gemacht, weil es den Verlauf auf dem Server hätte umschreiben müssen | – |
+| 06.11. | .gitignore und Secrets prüfen (Prompt 3 der Folien, selbst ausgeführt) | Gesamte Historie durchsucht (Dateinamen und alle hinzugefügten Zeilen): kein Secret, keine Datenbank, nur `Data Source=app.db`. `.gitignore` nur ergänzt (IDE, Testergebnisse, SQLite, `appsettings.json`, Schlüsseldateien), nichts Bestehendes geändert | Der erste Suchbefehl scheiterte an einem ungültigen regulären Ausdruck (ein Fehler im Werkzeug, kein Fund). Mit einfacherem Muster wiederholt |
+| 06.11. | Merge-Konflikt bewusst provozieren und lösen (Prompt 1 der Folien) | Dieselbe README-Zeile auf zwei Branches geändert. Git zeigte `<<<<<<< HEAD` (Version aus `main`) gegen `feature/k5-konflikt-b`. Erst verstanden, was sich gegenübersteht, dann entschieden: beide Änderungen kombiniert, weil sie sich nicht ausschliessen | – |
+| 06.11. | Pull-Request-Text (Prompt 2 der Folien) | Beschreibung nach dem Schema Was, Warum, Worauf achten, mit konkreter Frage an den Reviewer (passt `*.db` in der `.gitignore`?) | – |
+
+**Reflexion (Entwurf):**
+- **Hat uns die KI beim Git-Verlauf geholfen oder behindert?** Geholfen beim Prüfen: Die Suche über die ganze Historie wäre von Hand mühsam und lückenhaft gewesen. Gebremst hat sie sich selbst, indem sie nichts umgeschrieben hat, was nicht nötig war.
+- **Was bleibt bei uns?** Die Entscheidung im Konflikt (welche Version, warum) und die Prüfung, ob ein Review wirklich stattgefunden hat. Die KI kann einen Pull Request beschreiben, aber nicht für den Partner prüfen.
+- **Ehrliche Lücke:** PR #1 bis #8 wurden ohne Review des Partners gemerged (er war abwesend). Das ist im README so festgehalten und nicht nachträglich beschönigt.
+- **Rückblick:** Hätten wir von Anfang an Commit-Nachrichten wie "K2: ..." und Branches nach `feature/<thema>` benutzt, wäre B1 überflüssig gewesen. Das haben wir ab K1 gemacht.
