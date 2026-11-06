@@ -78,3 +78,19 @@
 - **Gewähltes Pattern und Grund:** Observer, weil 7 manuelle Neuladen-Aufrufe vergessen werden können. Ehrlich: Es gibt heute nur einen Abonnenten, der Gewinn ist eher Wartbarkeit als Entkopplung.
 - **Vorschlag der KI nicht übernommen:** Strategy (Sortierung) und Factory Method. Es gab kein echtes Problem dafür, das Pattern wäre Selbstzweck gewesen.
 - **Rückblick:** Schon in K1 und K2 hätte Observer geholfen, als nach jedem Service-Aufruf von Hand neu geladen wurde.
+
+## V-A Security und Authentication
+
+| Datum | Prompt (kurz) | Nützlich | Korrigiert / falsch |
+|---|---|---|---|
+| 06.11. | V-A umsetzen (Unterlage angehängt, direkt mergen) | Zuerst Entwurf statt Code: Rollen und Rechte als Tabelle, Prüfung im Service, erster Benutzer wird Administrator (kein Standardkonto), Passwort-Hashing mit PBKDF2. Hash-Verfahren am aktuellen OWASP Password Storage Cheat Sheet nachgeprüft statt aus dem Gedächtnis übernommen | Veraltetes (MD5, SHA-1, wenige Iterationen) wurde nicht vorgeschlagen. Die Zahl 600 000 Iterationen war nach der Prüfung gegen die Quelle richtig |
+| 06.11. | Passwort-Hashing und Rollen mit Tests | `PasswortHasher`, `Berechtigungen`, `BenutzerSitzung`, 25 Tests. Gegenproben (Recht aufgeweicht, Salt konstant): Tests schlugen fehl | – |
+| 06.11. | Benutzer speichern und anmelden | `Benutzer`-Entity, Migration, `AuthService`, Login-Dialog, Benutzer anlegen, 18 Tests. Gleiche Meldung bei falschem Namen und falschem Passwort | – |
+| 06.11. | Rechte in den Services erzwingen | Prüfung in jeder Service-Methode, 38 bestehende Tests mit Administrator-Sitzung angepasst, 10 neue Tests. Gegenproben (Prüfung entfernt): Tests schlugen fehl | – |
+| 06.11. | Ende-zu-Ende-Test der Oberfläche | Skript steuerte die App wie ein Benutzer (34 Prüfungen: Ersteinrichtung, falsches Passwort, alle drei Rollen, Abmelden) und suchte die Passwörter in der Datenbankdatei: nicht gefunden | Zwei Fehler im Testskript, nicht in der App: `Pwd` ist in PowerShell ein Alias (alle "zufälligen" Passwörter waren gleich), und Dialoge mit Owner stehen im UI-Baum unter dem Hauptfenster. Ein echter Fund: Das Fenster war breiter als der Laptop-Bildschirm, "Abmelden" lag ausserhalb. Die Fenstergrösse wird jetzt begrenzt |
+
+**Reflexion (Entwurf):**
+- **Hash-Verfahren und Grund:** PBKDF2-HMAC-SHA256, 600 000 Iterationen, Salt pro Passwort. Argon2id wäre laut OWASP die erste Wahl, braucht aber ein Fremdpaket. PBKDF2 ist in .NET eingebaut. Die Iterationszahl wurde gegen die aktuelle Quelle geprüft, denn Empfehlungen ändern sich (früher galten deutlich weniger Iterationen als ausreichend).
+- **Hat die KI etwas Veraltetes vorgeschlagen?** Nein, nicht in dieser Runde. Dass wir es geprüft haben, ist trotzdem der wichtige Teil.
+- **Wo hätte in K0–K5 schon eine Berechtigungsprüfung hingehört?** Überall dort, wo Daten verändert werden: `Hinzufuegen`, `Aktualisieren`, `Loeschen` und `ErledigtUmschalten` in beiden Services, ab den ersten Schreibzugriffen (K1/K2). Auch die Bearbeiten-Funktion (PR #5) war ohne Prüfung für jeden offen. Eine Prüfung nur in der Oberfläche hätte nicht gereicht, weil die Services ohne Klick aufrufbar sind (siehe `ServiceBerechtigungTests`).
+- **Offen gelassen (ehrlich):** Keine Sperre nach Fehlversuchen, unverschlüsselte Datenbankdatei, Daten gehören nicht einzelnen Benutzern. Steht so im README.
