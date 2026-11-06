@@ -6,14 +6,17 @@ namespace Reiseplaner.Services;
 
 /// <summary>
 /// Business-Logik für Reisen: laden, anlegen, löschen und das Budget berechnen.
+/// Jede Methode prüft zuerst die Berechtigung des angemeldeten Benutzers (nicht nur die Oberfläche).
 /// </summary>
 public class ReiseService
 {
     private readonly IRepository<Reise> _repository;
+    private readonly IBenutzerSitzung _sitzung;
 
-    public ReiseService(IRepository<Reise> repository)
+    public ReiseService(IRepository<Reise> repository, IBenutzerSitzung sitzung)
     {
         _repository = repository;
+        _sitzung = sitzung;
     }
 
     /// <summary>
@@ -26,6 +29,8 @@ public class ReiseService
     /// </summary>
     public List<ReiseDto> LadeAlle()
     {
+        _sitzung.Pruefe(Recht.Ansehen);
+
         return _repository.GetAll()
             .Select(ErstelleDto)
             .ToList();
@@ -36,6 +41,8 @@ public class ReiseService
     /// </summary>
     public void Hinzufuegen(ReiseDto reiseDto)
     {
+        _sitzung.Pruefe(Recht.Bearbeiten);
+
         var reise = new Reise();
         UebernehmeWerte(reiseDto, reise);
 
@@ -49,6 +56,8 @@ public class ReiseService
     /// </summary>
     public void Aktualisieren(ReiseDto reiseDto)
     {
+        _sitzung.Pruefe(Recht.Bearbeiten);
+
         var reise = _repository.GetById(reiseDto.Id);
         if (reise == null) return;
 
@@ -62,6 +71,8 @@ public class ReiseService
     /// </summary>
     public void Loeschen(int id)
     {
+        _sitzung.Pruefe(Recht.Loeschen);
+
         _repository.Delete(id);
         MeldeAenderung();
     }

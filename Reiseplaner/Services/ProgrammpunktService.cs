@@ -6,14 +6,17 @@ namespace Reiseplaner.Services;
 
 /// <summary>
 /// Business-Logik für Programmpunkte: laden, anlegen, löschen und den Erledigt-Status umschalten.
+/// Jede Methode prüft zuerst die Berechtigung des angemeldeten Benutzers (nicht nur die Oberfläche).
 /// </summary>
 public class ProgrammpunktService
 {
     private readonly IProgrammpunktRepository _repository;
+    private readonly IBenutzerSitzung _sitzung;
 
-    public ProgrammpunktService(IProgrammpunktRepository repository)
+    public ProgrammpunktService(IProgrammpunktRepository repository, IBenutzerSitzung sitzung)
     {
         _repository = repository;
+        _sitzung = sitzung;
     }
 
     /// <summary>
@@ -27,6 +30,8 @@ public class ProgrammpunktService
     /// </summary>
     public List<ProgrammpunktDto> LadeProgrammpunkte(int reiseId)
     {
+        _sitzung.Pruefe(Recht.Ansehen);
+
         return _repository.GetByReise(reiseId)
             .Select(ErstelleDto)
             .ToList();
@@ -37,6 +42,8 @@ public class ProgrammpunktService
     /// </summary>
     public void Hinzufuegen(int reiseId, ProgrammpunktDto programmpunktDto)
     {
+        _sitzung.Pruefe(Recht.Bearbeiten);
+
         var programmpunkt = new Programmpunkt { ReiseId = reiseId };
         UebernehmeWerte(programmpunktDto, programmpunkt);
 
@@ -51,6 +58,8 @@ public class ProgrammpunktService
     /// </summary>
     public void Aktualisieren(ProgrammpunktDto programmpunktDto)
     {
+        _sitzung.Pruefe(Recht.Bearbeiten);
+
         var programmpunkt = _repository.GetById(programmpunktDto.Id);
         if (programmpunkt == null) return;
 
@@ -65,6 +74,8 @@ public class ProgrammpunktService
     /// </summary>
     public void ErledigtUmschalten(int programmpunktId)
     {
+        _sitzung.Pruefe(Recht.Bearbeiten);
+
         var programmpunkt = _repository.GetById(programmpunktId);
         if (programmpunkt == null) return;
 
@@ -78,6 +89,8 @@ public class ProgrammpunktService
     /// </summary>
     public void Loeschen(int id)
     {
+        _sitzung.Pruefe(Recht.Loeschen);
+
         _repository.Delete(id);
         MeldeAenderung();
     }

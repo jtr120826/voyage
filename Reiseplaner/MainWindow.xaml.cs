@@ -89,8 +89,25 @@ public partial class MainWindow : Window
         var benutzer = _sitzung.AngemeldeterBenutzer;
         BenutzerText.Text = benutzer == null ? "Nicht angemeldet" : $"Angemeldet als {benutzer.Benutzername} ({benutzer.Rolle})";
         BenutzerAnlegenButton.Visibility = _sitzung.Darf(Recht.BenutzerVerwalten) ? Visibility.Visible : Visibility.Collapsed;
+        AktualisiereBerechtigungen();
 
         ReisenAktualisierenMitAuswahl();
+    }
+
+    // Sperrt Schaltflächen, die der Benutzer nicht braucht. Das ist nur Komfort: die eigentliche Prüfung
+    // passiert in den Services und gilt auch, wenn diese Sperre umgangen würde.
+    private void AktualisiereBerechtigungen()
+    {
+        var darfBearbeiten = _sitzung.Darf(Recht.Bearbeiten);
+        var darfLoeschen = _sitzung.Darf(Recht.Loeschen);
+
+        ReiseSpeichernButton.IsEnabled = darfBearbeiten;
+        ReiseBearbeitenButton.IsEnabled = darfBearbeiten;
+        PunktSpeichernButton.IsEnabled = darfBearbeiten;
+        PunktBearbeitenButton.IsEnabled = darfBearbeiten;
+        ErledigtButton.IsEnabled = darfBearbeiten;
+        ReiseLoeschenButton.IsEnabled = darfLoeschen;
+        PunktLoeschenButton.IsEnabled = darfLoeschen;
     }
 
     /// <summary>
