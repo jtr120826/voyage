@@ -25,16 +25,27 @@ public partial class MainWindow : Window
 
     private readonly ReiseService _reiseService;
     private readonly ProgrammpunktService _programmpunktService;
+    private readonly AuthService _authService;
+    private readonly IBenutzerSitzung _sitzung;
     private readonly Dictionary<TextBox, TextBlock> _platzhalterProTextBox;
 
     // Id der Reise bzw. des Programmpunkts, die gerade im Formular bearbeitet werden (null = neu anlegen).
     private int? _bearbeiteteReiseId;
     private int? _bearbeiteterProgrammpunktId;
 
-    public MainWindow(ReiseService reiseService, ProgrammpunktService programmpunktService)
+    /// <summary>
+    /// Wird ausgelöst, wenn der Benutzer auf "Abmelden" klickt. Den Ablauf danach (erneut anmelden oder beenden)
+    /// übernimmt die App, dieses Fenster kennt nur die Sitzung.
+    /// </summary>
+    public event EventHandler? AbmeldenAngefordert;
+
+    public MainWindow(ReiseService reiseService, ProgrammpunktService programmpunktService,
+        AuthService authService, IBenutzerSitzung sitzung)
     {
         _reiseService = reiseService;
         _programmpunktService = programmpunktService;
+        _authService = authService;
+        _sitzung = sitzung;
 
         InitializeComponent();
 
@@ -56,10 +67,51 @@ public partial class MainWindow : Window
         _reiseService.DatenGeaendert += OnDatenGeaendert;
         _programmpunktService.DatenGeaendert += OnDatenGeaendert;
 
-        ReisenAktualisierenMitAuswahl();
+        NachAnmeldungAktualisieren();
     }
 
     private ReiseDto? AktuelleReise => ReisenGrid.SelectedItem as ReiseDto;
+
+    /// <summary>
+    /// Setzt das Fenster für den aktuell angemeldeten Benutzer auf: Formulare leeren, Daten laden, Kopfzeile
+    /// und Schaltflächen nach Rolle. Wird beim Start und nach jeder erneuten Anmeldung aufgerufen.
+    /// </summary>
+    public void NachAnmeldungAktualisieren()
+    {
+        BeendeReiseBearbeitung();
+        BeendeProgrammpunktBearbeitung();
+
+        // Auswahl und Daten des vorherigen Benutzers dürfen nicht stehen bleiben.
+        ReisenGrid.ItemsSource = null;
+        ProgrammGrid.ItemsSource = null;
+        BudgetInfoText.Text = "";
+
+        var benutzer = _sitzung.AngemeldeterBenutzer;
+        BenutzerText.Text = benutzer == null ? "Nicht angemeldet" : $"Angemeldet als {benutzer.Benutzername} ({benutzer.Rolle})";
+        BenutzerAnlegenButton.Visibility = _sitzung.Darf(Recht.BenutzerVerwalten) ? Visibility.Visible : Visibility.Collapsed;
+
+        ReisenAktualisierenMitAuswahl();
+    }
+
+    /// <summary>
+    /// Leert alle Daten im Fenster, solange niemand angemeldet ist.
+    /// </summary>
+    public void DatenAusblenden()
+    {
+        ReisenGrid.ItemsSource = null;
+        ProgrammGrid.ItemsSource = null;
+        BudgetInfoText.Text = "";
+    }
+
+    private void AbmeldenButton_Click(object sender, RoutedEventArgs e)
+    {
+        AbmeldenAngefordert?.Invoke(this, EventArgs.Empty);
+    }
+
+    private void BenutzerAnlegenButton_Click(object sender, RoutedEventArgs e)
+    {
+        new BenutzerAnlegenWindow(_authService) { Owner = this }.ShowDialog();
+    }
 
     // Blendet den Platzhaltertext aus, sobald die zugehörige TextBox Inhalt hat, und wieder ein, wenn sie leer ist.
     private void PlatzhalterAktualisieren(object sender, TextChangedEventArgs e)

@@ -12,6 +12,18 @@
             <Setter Property="IsHitTestVisible" Value="False"/>
         </Style>
     </Window.Resources>
+    <DockPanel>
+    <!-- Kopfzeile: angemeldeter Benutzer, Abmelden und (nur Administratoren) Benutzer anlegen -->
+    <Border DockPanel.Dock="Top" Padding="10,6" Background="#FFF0F0F0" BorderBrush="LightGray" BorderThickness="0,0,0,1">
+        <DockPanel>
+            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                <Button x:Name="BenutzerAnlegenButton" Content="Benutzer anlegen" Padding="10,2"
+                        Margin="0,0,6,0" Click="BenutzerAnlegenButton_Click"/>
+                <Button x:Name="AbmeldenButton" Content="Abmelden" Padding="10,2" Click="AbmeldenButton_Click"/>
+            </StackPanel>
+            <TextBlock x:Name="BenutzerText" VerticalAlignment="Center"/>
+        </DockPanel>
+    </Border>
     <Grid Margin="10">
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="700"/>
@@ -127,4 +139,5 @@
             </StackPanel>
         </Grid>
     </Grid>
+    </DockPanel>
 </Window>
