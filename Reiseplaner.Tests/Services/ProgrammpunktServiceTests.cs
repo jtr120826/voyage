@@ -177,6 +177,86 @@ public class ProgrammpunktServiceTests
     }
 
     [Fact]
+    public void Aktualisieren_ExistierenderProgrammpunkt_UebernimmtDieNeuenWerte()
+    {
+        // Arrange
+        var repository = new FakeProgrammpunktRepository();
+        repository.Programmpunkte.Add(ErstelleProgrammpunkt(id: 1, reiseId: 1, erledigt: false));
+        var service = new ProgrammpunktService(repository);
+        var dto = new ProgrammpunktDto
+        {
+            Id = 1,
+            Titel = "Neuer Titel",
+            Datum = "2027-03-03",
+            Kategorie = Kategorien.Unterkunft,
+            Kosten = 250m
+        };
+
+        // Act
+        service.Aktualisieren(dto);
+
+        // Assert
+        var gespeichert = Assert.Single(repository.Programmpunkte);
+        Assert.Equal("Neuer Titel", gespeichert.Titel);
+        Assert.Equal("2027-03-03", gespeichert.Datum);
+        Assert.Equal(Kategorien.Unterkunft, gespeichert.Kategorie);
+        Assert.Equal(250m, gespeichert.Kosten);
+    }
+
+    [Fact]
+    public void Aktualisieren_ErledigterProgrammpunkt_BehaeltErledigtStatusUndReise()
+    {
+        // Arrange
+        var repository = new FakeProgrammpunktRepository();
+        repository.Programmpunkte.Add(ErstelleProgrammpunkt(id: 1, reiseId: 7, erledigt: true));
+        var service = new ProgrammpunktService(repository);
+        var dto = new ProgrammpunktDto { Id = 1, Titel = "Geändert", Datum = "2026-01-01", Kategorie = Kategorien.Essen, Kosten = 5m, Erledigt = false };
+
+        // Act
+        service.Aktualisieren(dto);
+
+        // Assert
+        var gespeichert = Assert.Single(repository.Programmpunkte);
+        Assert.True(gespeichert.Erledigt, "Das Bearbeiten darf den Erledigt-Status nicht zurücksetzen.");
+        Assert.Equal(7, gespeichert.ReiseId);
+    }
+
+    [Fact]
+    public void Aktualisieren_ZweiProgrammpunkte_AendertNurDenAngegebenen()
+    {
+        // Arrange
+        var repository = new FakeProgrammpunktRepository();
+        repository.Programmpunkte.Add(ErstelleProgrammpunkt(id: 1, reiseId: 1, erledigt: false));
+        repository.Programmpunkte.Add(ErstelleProgrammpunkt(id: 2, reiseId: 1, erledigt: false));
+        var service = new ProgrammpunktService(repository);
+        var dto = new ProgrammpunktDto { Id = 2, Titel = "Geändert", Datum = "2026-01-01", Kategorie = Kategorien.Essen, Kosten = 10m };
+
+        // Act
+        service.Aktualisieren(dto);
+
+        // Assert
+        Assert.Equal("Programmpunkt 1", repository.Programmpunkte.Single(p => p.Id == 1).Titel);
+        Assert.Equal("Geändert", repository.Programmpunkte.Single(p => p.Id == 2).Titel);
+    }
+
+    [Fact]
+    public void Aktualisieren_NichtExistierendeId_AendertNichtsUndWirftKeinenFehler()
+    {
+        // Arrange
+        var repository = new FakeProgrammpunktRepository();
+        repository.Programmpunkte.Add(ErstelleProgrammpunkt(id: 1, reiseId: 1, erledigt: false));
+        var service = new ProgrammpunktService(repository);
+        var dto = new ProgrammpunktDto { Id = 999, Titel = "Gibt es nicht" };
+
+        // Act
+        var fehler = Record.Exception(() => service.Aktualisieren(dto));
+
+        // Assert
+        Assert.Null(fehler);
+        Assert.Equal("Programmpunkt 1", Assert.Single(repository.Programmpunkte).Titel);
+    }
+
+    [Fact]
     public void Loeschen_ExistierenderProgrammpunkt_EntferntNurDiesen()
     {
         // Arrange

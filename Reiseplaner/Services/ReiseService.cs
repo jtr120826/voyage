@@ -31,22 +31,38 @@ public class ReiseService
     /// </summary>
     public void Hinzufuegen(ReiseDto reiseDto)
     {
-        var reise = new Reise
-        {
-            Titel = reiseDto.Titel,
-            Zielort = reiseDto.Zielort,
-            Startdatum = reiseDto.Startdatum,
-            Enddatum = reiseDto.Enddatum,
-            Budget = reiseDto.Budget
-        };
+        var reise = new Reise();
+        UebernehmeWerte(reiseDto, reise);
 
         _repository.Add(reise);
+    }
+
+    /// <summary>
+    /// Übernimmt die Werte aus dem DTO in die bestehende Reise mit derselben Id.
+    /// Existiert die Reise nicht, passiert nichts.
+    /// </summary>
+    public void Aktualisieren(ReiseDto reiseDto)
+    {
+        var reise = _repository.GetById(reiseDto.Id);
+        if (reise == null) return;
+
+        UebernehmeWerte(reiseDto, reise);
+        _repository.Update(reise);
     }
 
     /// <summary>
     /// Löscht die Reise mit der angegebenen Id.
     /// </summary>
     public void Loeschen(int id) => _repository.Delete(id);
+
+    private static void UebernehmeWerte(ReiseDto reiseDto, Reise reise)
+    {
+        reise.Titel = reiseDto.Titel;
+        reise.Zielort = reiseDto.Zielort;
+        reise.Startdatum = reiseDto.Startdatum;
+        reise.Enddatum = reiseDto.Enddatum;
+        reise.Budget = reiseDto.Budget;
+    }
 
     private static ReiseDto ErstelleDto(Reise reise)
     {

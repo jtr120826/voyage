@@ -60,3 +60,9 @@
 | 06.11. | Branch, PR #4 | Frischer Checkout geprüft (20/20 grün, Start mit leerer DB), gemergt | – |
 
 **Reflexion (Entwurf):** Fachlich falsche Testfälle gab es keine, aber einen wertlosen (siehe oben). Erkannt haben wir das, weil wir uns gefragt haben, ob der Test überhaupt fehlschlagen kann. Am meisten verändert hat sich das Vertrauen: Nach jeder Änderung zeigen 20 Tests sofort, ob etwas kaputtgegangen ist.
+
+## Weiterentwicklung nach K4
+
+| Datum | Prompt (kurz) | Nützlich | Korrigiert / falsch |
+|---|---|---|---|
+| 06.11. | Bearbeiten-Funktion für Reisen und Programmpunkte | `Aktualisieren()` in beiden Services (gemeinsames `UebernehmeWerte`, kein doppelter Code), Bearbeitungsmodus im Formular, 8 neue Tests (28 insgesamt). Das schliesst das fehlende "U" im CRUD | Der Reise-Fake gab beim Laden dieselbe Instanz zurück, ein vergessener `Update()`-Aufruf wäre nicht aufgefallen: Fake angepasst (Kopie wie die Datenbank), danach Gegenproben (Erledigt-Status überschreiben, `Update()` entfernen) |

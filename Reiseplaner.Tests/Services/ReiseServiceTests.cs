@@ -142,6 +142,89 @@ public class ReiseServiceTests
     }
 
     [Fact]
+    public void Aktualisieren_ExistierendeReise_UebernimmtDieNeuenWerte()
+    {
+        // Arrange
+        var repository = new FakeReiseRepository();
+        repository.Reisen.Add(ErstelleReise(id: 1, budget: 100m, kosten: []));
+        var service = new ReiseService(repository);
+        var dto = new ReiseDto
+        {
+            Id = 1,
+            Titel = "Neuer Titel",
+            Zielort = "Neuer Ort",
+            Startdatum = "2027-02-01",
+            Enddatum = "2027-02-08",
+            Budget = 999m
+        };
+
+        // Act
+        service.Aktualisieren(dto);
+
+        // Assert
+        var gespeichert = Assert.Single(repository.Reisen);
+        Assert.Equal("Neuer Titel", gespeichert.Titel);
+        Assert.Equal("Neuer Ort", gespeichert.Zielort);
+        Assert.Equal("2027-02-01", gespeichert.Startdatum);
+        Assert.Equal("2027-02-08", gespeichert.Enddatum);
+        Assert.Equal(999m, gespeichert.Budget);
+    }
+
+    [Fact]
+    public void Aktualisieren_ReiseMitProgrammpunkten_BehaeltDieProgrammpunkte()
+    {
+        // Arrange
+        var repository = new FakeReiseRepository();
+        repository.Reisen.Add(ErstelleReise(id: 1, budget: 100m, kosten: [30m, 20m]));
+        var service = new ReiseService(repository);
+        var dto = new ReiseDto { Id = 1, Titel = "Geändert", Zielort = "Ort", Startdatum = "2026-01-01", Enddatum = "2026-01-02", Budget = 500m };
+
+        // Act
+        service.Aktualisieren(dto);
+
+        // Assert
+        var reise = Assert.Single(service.LadeAlle());
+        Assert.Equal(50m, reise.GeplantesBudget);
+        Assert.Equal(450m, reise.VerbleibendesBudget);
+    }
+
+    [Fact]
+    public void Aktualisieren_ZweiReisen_AendertNurDieAngegebene()
+    {
+        // Arrange
+        var repository = new FakeReiseRepository();
+        repository.Reisen.Add(ErstelleReise(id: 1, budget: 100m, kosten: []));
+        repository.Reisen.Add(ErstelleReise(id: 2, budget: 200m, kosten: []));
+        var service = new ReiseService(repository);
+        var dto = new ReiseDto { Id = 2, Titel = "Geändert", Zielort = "Ort", Startdatum = "2026-01-01", Enddatum = "2026-01-02", Budget = 250m };
+
+        // Act
+        service.Aktualisieren(dto);
+
+        // Assert
+        Assert.Equal("Reise 1", repository.Reisen.Single(r => r.Id == 1).Titel);
+        Assert.Equal("Geändert", repository.Reisen.Single(r => r.Id == 2).Titel);
+    }
+
+    [Fact]
+    public void Aktualisieren_NichtExistierendeId_AendertNichtsUndWirftKeinenFehler()
+    {
+        // Arrange
+        var repository = new FakeReiseRepository();
+        repository.Reisen.Add(ErstelleReise(id: 1, budget: 100m, kosten: []));
+        var service = new ReiseService(repository);
+        var dto = new ReiseDto { Id = 999, Titel = "Gibt es nicht" };
+
+        // Act
+        var fehler = Record.Exception(() => service.Aktualisieren(dto));
+
+        // Assert
+        Assert.Null(fehler);
+        var unveraendert = Assert.Single(repository.Reisen);
+        Assert.Equal("Reise 1", unveraendert.Titel);
+    }
+
+    [Fact]
     public void Loeschen_ExistierendeReise_EntferntNurDieseReise()
     {
         // Arrange

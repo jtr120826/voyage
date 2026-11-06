@@ -11,6 +11,13 @@ namespace Reiseplaner;
 public partial class MainWindow : Window
 {
     private const string DatumsFormat = "yyyy-MM-dd";
+    private const string BetragsFormat = "0.##";
+    private const string HinzufuegenText = "Hinzufügen";
+    private const string SpeichernText = "Speichern";
+    private const string NeueReiseTitel = "Neue Reise";
+    private const string ReiseBearbeitenTitel = "Reise bearbeiten";
+    private const string NeuerProgrammpunktTitel = "Neuer Programmpunkt";
+    private const string ProgrammpunktBearbeitenTitel = "Programmpunkt bearbeiten";
     private const string KeineReiseGewaehltMeldung = "Bitte zuerst eine Reise auswählen.";
     private const string KeinProgrammpunktGewaehltMeldung = "Bitte zuerst einen Programmpunkt auswählen.";
     private const string ReiseUnvollstaendigMeldung = "Bitte Titel, Zielort, Start- und Enddatum ausfüllen.";
@@ -19,6 +26,10 @@ public partial class MainWindow : Window
     private readonly ReiseService _reiseService;
     private readonly ProgrammpunktService _programmpunktService;
     private readonly Dictionary<TextBox, TextBlock> _platzhalterProTextBox;
+
+    // Id der Reise bzw. des Programmpunkts, die gerade im Formular bearbeitet werden (null = neu anlegen).
+    private int? _bearbeiteteReiseId;
+    private int? _bearbeiteterProgrammpunktId;
 
     public MainWindow(ReiseService reiseService, ProgrammpunktService programmpunktService)
     {
@@ -97,7 +108,7 @@ public partial class MainWindow : Window
             : anfang + $"Rest: {reise.VerbleibendesBudget:C}";
     }
 
-    private void ReiseHinzufuegenButton_Click(object sender, RoutedEventArgs e)
+    private void ReiseSpeichernButton_Click(object sender, RoutedEventArgs e)
     {
         if (!IstReiseFormularVollstaendig())
         {
@@ -105,9 +116,50 @@ public partial class MainWindow : Window
             return;
         }
 
+        if (_bearbeiteteReiseId is int reiseId)
+        {
+            SpeichereBearbeiteteReise(reiseId);
+        }
+        else
+        {
+            FuegeReiseHinzu();
+        }
+    }
+
+    private void FuegeReiseHinzu()
+    {
         _reiseService.Hinzufuegen(LeseReiseAusFormular());
         LeereReiseFormular();
         ReisenLaden();
+    }
+
+    private void SpeichereBearbeiteteReise(int reiseId)
+    {
+        var reiseDto = LeseReiseAusFormular();
+        reiseDto.Id = reiseId;
+
+        _reiseService.Aktualisieren(reiseDto);
+        BeendeReiseBearbeitung();
+        ReisenAktualisierenMitAuswahl();
+    }
+
+    private void ReiseBearbeitenButton_Click(object sender, RoutedEventArgs e)
+    {
+        var reise = AktuelleReise;
+        if (reise == null)
+        {
+            MessageBox.Show(KeineReiseGewaehltMeldung);
+            return;
+        }
+
+        FuelleReiseFormular(reise);
+        _bearbeiteteReiseId = reise.Id;
+        AktualisiereReiseFormularModus();
+    }
+
+    private void ReiseAbbrechenButton_Click(object sender, RoutedEventArgs e)
+    {
+        BeendeReiseBearbeitung();
     }
 
     private bool IstReiseFormularVollstaendig()
@@ -132,6 +184,15 @@ public partial class MainWindow : Window
         };
     }
 
+    private void FuelleReiseFormular(ReiseDto reise)
+    {
+        TitelBox.Text = reise.Titel;
+        ZielortBox.Text = reise.Zielort;
+        StartPicker.SelectedDate = LeseDatum(reise.Startdatum);
+        EndePicker.SelectedDate = LeseDatum(reise.Enddatum);
+        BudgetBox.Text = FormatiereBetrag(reise.Budget);
+    }
+
     private void LeereReiseFormular()
     {
         TitelBox.Clear();
@@ -139,6 +200,22 @@ public partial class MainWindow : Window
         StartPicker.SelectedDate = null;
         EndePicker.SelectedDate = null;
         BudgetBox.Clear();
+    }
+
+    private void BeendeReiseBearbeitung()
+    {
+        _bearbeiteteReiseId = null;
+        LeereReiseFormular();
+        AktualisiereReiseFormularModus();
+    }
+
+    private void AktualisiereReiseFormularModus()
+    {
+        var istBearbeitung = _bearbeiteteReiseId != null;
+
+        ReiseFormularTitel.Text = istBearbeitung ? ReiseBearbeitenTitel : NeueReiseTitel;
+        ReiseSpeichernButton.Content = istBearbeitung ? SpeichernText : HinzufuegenText;
+        ReiseAbbrechenButton.Visibility = istBearbeitung ? Visibility.Visible : Visibility.Collapsed;
     }
 
     private void ReiseLoeschenButton_Click(object sender, RoutedEventArgs e)
@@ -150,13 +227,33 @@ public partial class MainWindow : Window
             return;
         }
 
+        if (_bearbeiteteReiseId == reise.Id)
+        {
+            BeendeReiseBearbeitung();
+        }
+
+        // Die Programmpunkte der Reise verschwinden mit ihr, eine laufende Bearbeitung ist damit hinfällig.
+        BeendeProgrammpunktBearbeitung();
+
         _reiseService.Loeschen(reise.Id);
         ReisenLaden();
         ProgrammGrid.ItemsSource = null;
         BudgetInfoText.Text = "";
     }
 
-    private void PunktHinzufuegenButton_Click(object sender, RoutedEventArgs e)
+    private void PunktSpeichernButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (_bearbeiteterProgrammpunktId is int programmpunktId)
+        {
+            SpeichereBearbeitetenProgrammpunkt(programmpunktId);
+        }
+        else
+        {
+            FuegeProgrammpunktHinzu();
+        }
+    }
+
+    private void FuegeProgrammpunktHinzu()
     {
         var reise = AktuelleReise;
         if (reise == null)
@@ -174,6 +271,40 @@ public partial class MainWindow : Window
         _programmpunktService.Hinzufuegen(reise.Id, LeseProgrammpunktAusFormular());
         LeereProgrammpunktFormular();
         ReisenAktualisierenMitAuswahl();
+    }
+
+    private void SpeichereBearbeitetenProgrammpunkt(int programmpunktId)
+    {
+        if (!IstProgrammpunktFormularVollstaendig())
+        {
+            MessageBox.Show(ProgrammpunktUnvollstaendigMeldung);
+            return;
+        }
+
+        var programmpunktDto = LeseProgrammpunktAusFormular();
+        programmpunktDto.Id = programmpunktId;
+
+        _programmpunktService.Aktualisieren(programmpunktDto);
+        BeendeProgrammpunktBearbeitung();
+        ReisenAktualisierenMitAuswahl();
+    }
+
+    private void PunktBearbeitenButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (ProgrammGrid.SelectedItem is not ProgrammpunktDto programmpunkt)
+        {
+            MessageBox.Show(KeinProgrammpunktGewaehltMeldung);
+            return;
+        }
+
+        FuelleProgrammpunktFormular(programmpunkt);
+        _bearbeiteterProgrammpunktId = programmpunkt.Id;
+        AktualisiereProgrammpunktFormularModus();
+    }
+
+    private void PunktAbbrechenButton_Click(object sender, RoutedEventArgs e)
+    {
+        BeendeProgrammpunktBearbeitung();
     }
 
     private bool IstProgrammpunktFormularVollstaendig()
@@ -196,12 +327,36 @@ public partial class MainWindow : Window
         };
     }
 
+    private void FuelleProgrammpunktFormular(ProgrammpunktDto programmpunkt)
+    {
+        PunktTitelBox.Text = programmpunkt.Titel;
+        PunktDatumPicker.SelectedDate = LeseDatum(programmpunkt.Datum);
+        KategorieBox.SelectedItem = programmpunkt.Kategorie;
+        KostenBox.Text = FormatiereBetrag(programmpunkt.Kosten);
+    }
+
     private void LeereProgrammpunktFormular()
     {
         PunktTitelBox.Clear();
         PunktDatumPicker.SelectedDate = null;
         KategorieBox.SelectedItem = null;
         KostenBox.Clear();
+    }
+
+    private void BeendeProgrammpunktBearbeitung()
+    {
+        _bearbeiteterProgrammpunktId = null;
+        LeereProgrammpunktFormular();
+        AktualisiereProgrammpunktFormularModus();
+    }
+
+    private void AktualisiereProgrammpunktFormularModus()
+    {
+        var istBearbeitung = _bearbeiteterProgrammpunktId != null;
+
+        PunktFormularTitel.Text = istBearbeitung ? ProgrammpunktBearbeitenTitel : NeuerProgrammpunktTitel;
+        PunktSpeichernButton.Content = istBearbeitung ? SpeichernText : HinzufuegenText;
+        PunktAbbrechenButton.Visibility = istBearbeitung ? Visibility.Visible : Visibility.Collapsed;
     }
 
     private void ErledigtButton_Click(object sender, RoutedEventArgs e)
@@ -224,6 +379,11 @@ public partial class MainWindow : Window
             return;
         }
 
+        if (_bearbeiteterProgrammpunktId == programmpunkt.Id)
+        {
+            BeendeProgrammpunktBearbeitung();
+        }
+
         _programmpunktService.Loeschen(programmpunkt.Id);
         ReisenAktualisierenMitAuswahl();
     }
@@ -231,5 +391,17 @@ public partial class MainWindow : Window
     private static string FormatiereDatum(DateTime? datum)
     {
         return datum?.ToString(DatumsFormat) ?? "";
+    }
+
+    private static DateTime? LeseDatum(string datum)
+    {
+        return DateTime.TryParseExact(datum, DatumsFormat, CultureInfo.InvariantCulture, DateTimeStyles.None, out var ergebnis)
+            ? ergebnis
+            : null;
+    }
+
+    private static string FormatiereBetrag(decimal betrag)
+    {
+        return betrag.ToString(BetragsFormat, CultureInfo.InvariantCulture);
     }
 }
