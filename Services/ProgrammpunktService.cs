@@ -1,4 +1,5 @@
 using Reiseplaner.DataAccess;
+using Reiseplaner.Dtos;
 using Reiseplaner.Models;
 
 namespace Reiseplaner.Services;
@@ -12,25 +13,48 @@ public class ProgrammpunktService
         _repository = repository;
     }
 
-    public List<Programmpunkt> GetByReise(int reiseId) => _repository.GetByReise(reiseId);
-
-    public void Hinzufuegen(Programmpunkt punkt) => _repository.Add(punkt);
-
-    public void ErledigtUmschalten(Programmpunkt punkt)
+    public List<ProgrammpunktDto> GetByReise(int reiseId)
     {
-        var gespeicherterPunkt = _repository.GetById(punkt.Id);
-        if (gespeicherterPunkt == null) return;
+        return _repository.GetByReise(reiseId)
+            .Select(ErstelleDto)
+            .ToList();
+    }
 
-        gespeicherterPunkt.Erledigt = !gespeicherterPunkt.Erledigt;
-        _repository.Update(gespeicherterPunkt);
+    public void Hinzufuegen(int reiseId, ProgrammpunktDto programmpunktDto)
+    {
+        var programmpunkt = new Programmpunkt
+        {
+            Titel = programmpunktDto.Titel,
+            Datum = programmpunktDto.Datum,
+            Kategorie = programmpunktDto.Kategorie,
+            Kosten = programmpunktDto.Kosten,
+            ReiseId = reiseId
+        };
+
+        _repository.Add(programmpunkt);
+    }
+
+    public void ErledigtUmschalten(int programmpunktId)
+    {
+        var programmpunkt = _repository.GetById(programmpunktId);
+        if (programmpunkt == null) return;
+
+        programmpunkt.Erledigt = !programmpunkt.Erledigt;
+        _repository.Update(programmpunkt);
     }
 
     public void Loeschen(int id) => _repository.Delete(id);
 
-    public BudgetStatus BerechneBudgetStatus(Reise reise, List<Programmpunkt> punkte)
+    private static ProgrammpunktDto ErstelleDto(Programmpunkt programmpunkt)
     {
-        var ausgegeben = punkte.Sum(p => p.Kosten);
-        var rest = reise.Budget - ausgegeben;
-        return new BudgetStatus(ausgegeben, rest, rest < 0);
+        return new ProgrammpunktDto
+        {
+            Id = programmpunkt.Id,
+            Titel = programmpunkt.Titel,
+            Datum = programmpunkt.Datum,
+            Kategorie = programmpunkt.Kategorie,
+            Kosten = programmpunkt.Kosten,
+            Erledigt = programmpunkt.Erledigt
+        };
     }
 }

@@ -2,7 +2,7 @@ using System.Globalization;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Markup;
-using Reiseplaner.Models;
+using Reiseplaner.Dtos;
 using Reiseplaner.Services;
 
 namespace Reiseplaner;
@@ -27,7 +27,7 @@ public partial class MainWindow : Window
         ReisenLaden();
     }
 
-    private Reise? AktuelleReise => ReisenGrid.SelectedItem as Reise;
+    private ReiseDto? AktuelleReise => ReisenGrid.SelectedItem as ReiseDto;
 
     // Blendet den Platzhaltertext (z.B. "Reisetitel") aus, sobald die zugehörige TextBox
     // Inhalt hat, und wieder ein, sobald sie leer ist (reine UI-Anzeigelogik).
@@ -73,13 +73,11 @@ public partial class MainWindow : Window
             return;
         }
 
-        var punkte = _programmpunktService.GetByReise(reise.Id);
-        ProgrammGrid.ItemsSource = punkte;
+        ProgrammGrid.ItemsSource = _programmpunktService.GetByReise(reise.Id);
 
-        var status = _programmpunktService.BerechneBudgetStatus(reise, punkte);
-        BudgetInfoText.Text = status.Ueberschritten
-            ? $"Budget: {reise.Budget:C} | Ausgegeben: {status.Ausgegeben:C} | ÜBERSCHRITTEN um {-status.Rest:C}!"
-            : $"Budget: {reise.Budget:C} | Ausgegeben: {status.Ausgegeben:C} | Rest: {status.Rest:C}";
+        BudgetInfoText.Text = reise.IstBudgetUeberschritten
+            ? $"Budget: {reise.Budget:C} | Ausgegeben: {reise.GeplantesBudget:C} | ÜBERSCHRITTEN um {-reise.VerbleibendesBudget:C}!"
+            : $"Budget: {reise.Budget:C} | Ausgegeben: {reise.GeplantesBudget:C} | Rest: {reise.VerbleibendesBudget:C}";
     }
 
     private void ReiseHinzufuegenButton_Click(object sender, RoutedEventArgs e)
@@ -93,7 +91,7 @@ public partial class MainWindow : Window
 
         decimal.TryParse(BudgetBox.Text, NumberStyles.Number, CultureInfo.InvariantCulture, out var budget);
 
-        var reise = new Reise
+        var reiseDto = new ReiseDto
         {
             Titel = TitelBox.Text,
             Zielort = ZielortBox.Text,
@@ -102,7 +100,7 @@ public partial class MainWindow : Window
             Budget = budget
         };
 
-        _reiseService.Hinzufuegen(reise);
+        _reiseService.Hinzufuegen(reiseDto);
 
         TitelBox.Clear();
         ZielortBox.Clear();
@@ -146,16 +144,15 @@ public partial class MainWindow : Window
 
         decimal.TryParse(KostenBox.Text, NumberStyles.Number, CultureInfo.InvariantCulture, out var kosten);
 
-        var punkt = new Programmpunkt
+        var programmpunktDto = new ProgrammpunktDto
         {
             Titel = PunktTitelBox.Text,
             Datum = PunktDatumPicker.SelectedDate.Value.ToString("yyyy-MM-dd"),
             Kategorie = ((ComboBoxItem)KategorieBox.SelectedItem).Content.ToString()!,
-            Kosten = kosten,
-            ReiseId = reise.Id
+            Kosten = kosten
         };
 
-        _programmpunktService.Hinzufuegen(punkt);
+        _programmpunktService.Hinzufuegen(reise.Id, programmpunktDto);
 
         PunktTitelBox.Clear();
         PunktDatumPicker.SelectedDate = null;
@@ -167,19 +164,19 @@ public partial class MainWindow : Window
 
     private void ErledigtButton_Click(object sender, RoutedEventArgs e)
     {
-        if (ProgrammGrid.SelectedItem is not Programmpunkt punkt)
+        if (ProgrammGrid.SelectedItem is not ProgrammpunktDto punkt)
         {
             MessageBox.Show("Bitte zuerst einen Programmpunkt auswählen.");
             return;
         }
 
-        _programmpunktService.ErledigtUmschalten(punkt);
+        _programmpunktService.ErledigtUmschalten(punkt.Id);
         ReisenAktualisierenMitAuswahl();
     }
 
     private void PunktLoeschenButton_Click(object sender, RoutedEventArgs e)
     {
-        if (ProgrammGrid.SelectedItem is not Programmpunkt punkt)
+        if (ProgrammGrid.SelectedItem is not ProgrammpunktDto punkt)
         {
             MessageBox.Show("Bitte zuerst einen Programmpunkt auswählen.");
             return;
