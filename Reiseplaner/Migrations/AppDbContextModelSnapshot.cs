@@ -16,6 +16,39 @@ namespace Reiseplaner.Migrations
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "9.0.20");
 
+            modelBuilder.Entity("Reiseplaner.Models.Benutzer", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Benutzername")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Iterationen")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("PasswortHash")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Rolle")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Salt")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Benutzername")
+                        .IsUnique();
+
+                    b.ToTable("Benutzer");
+                });
+
             modelBuilder.Entity("Reiseplaner.Models.Programmpunkt", b =>
                 {
                     b.Property<int>("Id")
