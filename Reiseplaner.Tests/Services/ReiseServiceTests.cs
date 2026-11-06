@@ -257,6 +257,88 @@ public class ReiseServiceTests
         Assert.Single(repository.Reisen);
     }
 
+    [Fact]
+    public void Hinzufuegen_GueltigesDto_LoestDatenGeaendertAus()
+    {
+        // Arrange
+        var service = new ReiseService(new FakeReiseRepository());
+        var anzahlMeldungen = 0;
+        service.DatenGeaendert += (_, _) => anzahlMeldungen++;
+
+        // Act
+        service.Hinzufuegen(new ReiseDto { Titel = "Japan" });
+
+        // Assert
+        Assert.Equal(1, anzahlMeldungen);
+    }
+
+    [Fact]
+    public void Aktualisieren_ExistierendeReise_LoestDatenGeaendertAus()
+    {
+        // Arrange
+        var repository = new FakeReiseRepository();
+        repository.Reisen.Add(ErstelleReise(id: 1, budget: 100m, kosten: []));
+        var service = new ReiseService(repository);
+        var anzahlMeldungen = 0;
+        service.DatenGeaendert += (_, _) => anzahlMeldungen++;
+
+        // Act
+        service.Aktualisieren(new ReiseDto { Id = 1, Titel = "Geändert" });
+
+        // Assert
+        Assert.Equal(1, anzahlMeldungen);
+    }
+
+    [Fact]
+    public void Aktualisieren_NichtExistierendeId_LoestKeinDatenGeaendertAus()
+    {
+        // Arrange
+        var service = new ReiseService(new FakeReiseRepository());
+        var anzahlMeldungen = 0;
+        service.DatenGeaendert += (_, _) => anzahlMeldungen++;
+
+        // Act
+        service.Aktualisieren(new ReiseDto { Id = 999 });
+
+        // Assert
+        Assert.Equal(0, anzahlMeldungen);
+    }
+
+    [Fact]
+    public void Loeschen_ExistierendeReise_LoestDatenGeaendertAus()
+    {
+        // Arrange
+        var repository = new FakeReiseRepository();
+        repository.Reisen.Add(ErstelleReise(id: 1, budget: 100m, kosten: []));
+        var service = new ReiseService(repository);
+        var anzahlMeldungen = 0;
+        service.DatenGeaendert += (_, _) => anzahlMeldungen++;
+
+        // Act
+        service.Loeschen(1);
+
+        // Assert
+        Assert.Equal(1, anzahlMeldungen);
+    }
+
+    [Fact]
+    public void DatenGeaendert_ZweiUnabhaengigeAbonnenten_WerdenBeideBenachrichtigt()
+    {
+        // Arrange
+        var service = new ReiseService(new FakeReiseRepository());
+        var erster = 0;
+        var zweiter = 0;
+        service.DatenGeaendert += (_, _) => erster++;
+        service.DatenGeaendert += (_, _) => zweiter++;
+
+        // Act
+        service.Hinzufuegen(new ReiseDto { Titel = "Japan" });
+
+        // Assert
+        Assert.Equal(1, erster);
+        Assert.Equal(1, zweiter);
+    }
+
     private static Reise ErstelleReise(int id, decimal budget, decimal[] kosten)
     {
         var reise = new Reise

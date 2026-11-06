@@ -17,6 +17,11 @@ public class ReiseService
     }
 
     /// <summary>
+    /// Wird ausgelöst, nachdem sich die Reisen geändert haben (hinzugefügt, bearbeitet oder gelöscht).
+    /// </summary>
+    public event EventHandler? DatenGeaendert;
+
+    /// <summary>
     /// Lädt alle Reisen als DTOs, inklusive geplantem und verbleibendem Budget.
     /// </summary>
     public List<ReiseDto> LadeAlle()
@@ -35,6 +40,7 @@ public class ReiseService
         UebernehmeWerte(reiseDto, reise);
 
         _repository.Add(reise);
+        MeldeAenderung();
     }
 
     /// <summary>
@@ -48,12 +54,19 @@ public class ReiseService
 
         UebernehmeWerte(reiseDto, reise);
         _repository.Update(reise);
+        MeldeAenderung();
     }
 
     /// <summary>
     /// Löscht die Reise mit der angegebenen Id.
     /// </summary>
-    public void Loeschen(int id) => _repository.Delete(id);
+    public void Loeschen(int id)
+    {
+        _repository.Delete(id);
+        MeldeAenderung();
+    }
+
+    private void MeldeAenderung() => DatenGeaendert?.Invoke(this, EventArgs.Empty);
 
     private static void UebernehmeWerte(ReiseDto reiseDto, Reise reise)
     {

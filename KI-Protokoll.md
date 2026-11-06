@@ -66,3 +66,15 @@
 | Datum | Prompt (kurz) | Nützlich | Korrigiert / falsch |
 |---|---|---|---|
 | 06.11. | Bearbeiten-Funktion für Reisen und Programmpunkte | `Aktualisieren()` in beiden Services (gemeinsames `UebernehmeWerte`, kein doppelter Code), Bearbeitungsmodus im Formular, 8 neue Tests (28 insgesamt). Das schliesst das fehlende "U" im CRUD | Der Reise-Fake gab beim Laden dieselbe Instanz zurück, ein vergessener `Update()`-Aufruf wäre nicht aufgefallen: Fake angepasst (Kopie wie die Datenbank), danach Gegenproben (Erledigt-Status überschreiben, `Update()` entfernen) |
+
+## V-D Design Patterns (Observer)
+
+| Datum | Prompt (kurz) | Nützlich | Korrigiert / falsch |
+|---|---|---|---|
+| 06.11. | Wir nehmen V-A und V-D (Unterlage angehängt) | Die KI prüfte zuerst, ob ein Pattern ein echtes Problem löst, und zählte die Stellen: 7 manuelle Neuladen-Aufrufe im `MainWindow`. Entscheid: Observer | Ihr erster Vorschlag (Observer plus Strategy für eine Sortierung) war nach dem Lesen der Unterlage nicht haltbar: Strategy hätte erst ein künstliches Problem gebraucht. Verworfen |
+| 06.11. | Observer umsetzen | `DatenGeaendert`-Event in beiden Services, `MainWindow` abonniert es, 10 neue Tests (38 insgesamt), Ende-zu-Ende-Test der App | Das Testskript der KI scheiterte zuerst: Die kopierte Datenbank war leer, weil die WAL-Datei fehlte, und die Programmpunkt-Auswahl geht nach dem Neuladen verloren. Fehler im Testwerkzeug, nicht in der App |
+
+**Reflexion (Entwurf):**
+- **Gewähltes Pattern und Grund:** Observer, weil 7 manuelle Neuladen-Aufrufe vergessen werden können. Ehrlich: Es gibt heute nur einen Abonnenten, der Gewinn ist eher Wartbarkeit als Entkopplung.
+- **Vorschlag der KI nicht übernommen:** Strategy (Sortierung) und Factory Method. Es gab kein echtes Problem dafür, das Pattern wäre Selbstzweck gewesen.
+- **Rückblick:** Schon in K1 und K2 hätte Observer geholfen, als nach jedem Service-Aufruf von Hand neu geladen wurde.

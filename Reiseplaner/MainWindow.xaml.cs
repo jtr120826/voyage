@@ -52,7 +52,11 @@ public partial class MainWindow : Window
 
         KategorieBox.ItemsSource = Kategorien.Alle;
 
-        ReisenLaden();
+        // Observer: Die Services melden Änderungen, das Fenster aktualisiert sich selbst.
+        _reiseService.DatenGeaendert += OnDatenGeaendert;
+        _programmpunktService.DatenGeaendert += OnDatenGeaendert;
+
+        ReisenAktualisierenMitAuswahl();
     }
 
     private ReiseDto? AktuelleReise => ReisenGrid.SelectedItem as ReiseDto;
@@ -65,9 +69,9 @@ public partial class MainWindow : Window
         platzhalter.Visibility = textBox.Text.Length == 0 ? Visibility.Visible : Visibility.Collapsed;
     }
 
-    private void ReisenLaden()
+    private void OnDatenGeaendert(object? sender, EventArgs e)
     {
-        ReisenGrid.ItemsSource = _reiseService.LadeAlle();
+        ReisenAktualisierenMitAuswahl();
     }
 
     // Lädt die Reisen neu (aktualisiert die Budgetwerte) und behält die Auswahl bei,
@@ -130,7 +134,6 @@ public partial class MainWindow : Window
     {
         _reiseService.Hinzufuegen(LeseReiseAusFormular());
         LeereReiseFormular();
-        ReisenLaden();
     }
 
     private void SpeichereBearbeiteteReise(int reiseId)
@@ -140,7 +143,6 @@ public partial class MainWindow : Window
 
         _reiseService.Aktualisieren(reiseDto);
         BeendeReiseBearbeitung();
-        ReisenAktualisierenMitAuswahl();
     }
 
     private void ReiseBearbeitenButton_Click(object sender, RoutedEventArgs e)
@@ -236,9 +238,6 @@ public partial class MainWindow : Window
         BeendeProgrammpunktBearbeitung();
 
         _reiseService.Loeschen(reise.Id);
-        ReisenLaden();
-        ProgrammGrid.ItemsSource = null;
-        BudgetInfoText.Text = "";
     }
 
     private void PunktSpeichernButton_Click(object sender, RoutedEventArgs e)
@@ -270,7 +269,6 @@ public partial class MainWindow : Window
 
         _programmpunktService.Hinzufuegen(reise.Id, LeseProgrammpunktAusFormular());
         LeereProgrammpunktFormular();
-        ReisenAktualisierenMitAuswahl();
     }
 
     private void SpeichereBearbeitetenProgrammpunkt(int programmpunktId)
@@ -286,7 +284,6 @@ public partial class MainWindow : Window
 
         _programmpunktService.Aktualisieren(programmpunktDto);
         BeendeProgrammpunktBearbeitung();
-        ReisenAktualisierenMitAuswahl();
     }
 
     private void PunktBearbeitenButton_Click(object sender, RoutedEventArgs e)
@@ -368,7 +365,6 @@ public partial class MainWindow : Window
         }
 
         _programmpunktService.ErledigtUmschalten(programmpunkt.Id);
-        ReisenAktualisierenMitAuswahl();
     }
 
     private void PunktLoeschenButton_Click(object sender, RoutedEventArgs e)
@@ -385,7 +381,6 @@ public partial class MainWindow : Window
         }
 
         _programmpunktService.Loeschen(programmpunkt.Id);
-        ReisenAktualisierenMitAuswahl();
     }
 
     private static string FormatiereDatum(DateTime? datum)
