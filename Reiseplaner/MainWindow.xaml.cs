@@ -49,6 +49,13 @@ public partial class MainWindow : Window
 
         InitializeComponent();
 
+        // Auf kleinen Bildschirmen (z. B. Laptop mit hoher Skalierung) darf das Fenster nicht über den Rand ragen,
+        // sonst wäre die Schaltfläche "Abmelden" rechts oben nicht erreichbar.
+        var arbeitsbereich = SystemParameters.WorkArea;
+        Width = Math.Min(Width, arbeitsbereich.Width);
+        Height = Math.Min(Height, arbeitsbereich.Height);
+        WindowStartupLocation = WindowStartupLocation.CenterScreen;
+
         _platzhalterProTextBox = new Dictionary<TextBox, TextBlock>
         {
             [TitelBox] = TitelPlatzhalter,
