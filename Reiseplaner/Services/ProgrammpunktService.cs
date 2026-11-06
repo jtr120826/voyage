@@ -4,6 +4,9 @@ using Reiseplaner.Models;
 
 namespace Reiseplaner.Services;
 
+/// <summary>
+/// Business-Logik für Programmpunkte: laden, anlegen, löschen und den Erledigt-Status umschalten.
+/// </summary>
 public class ProgrammpunktService
 {
     private readonly IProgrammpunktRepository _repository;
@@ -13,13 +16,19 @@ public class ProgrammpunktService
         _repository = repository;
     }
 
-    public List<ProgrammpunktDto> GetByReise(int reiseId)
+    /// <summary>
+    /// Lädt alle Programmpunkte einer Reise als DTOs.
+    /// </summary>
+    public List<ProgrammpunktDto> LadeProgrammpunkte(int reiseId)
     {
         return _repository.GetByReise(reiseId)
             .Select(ErstelleDto)
             .ToList();
     }
 
+    /// <summary>
+    /// Legt einen neuen Programmpunkt für die angegebene Reise an.
+    /// </summary>
     public void Hinzufuegen(int reiseId, ProgrammpunktDto programmpunktDto)
     {
         var programmpunkt = new Programmpunkt
@@ -34,6 +43,10 @@ public class ProgrammpunktService
         _repository.Add(programmpunkt);
     }
 
+    /// <summary>
+    /// Schaltet einen offenen Programmpunkt auf erledigt und einen erledigten wieder auf offen.
+    /// Existiert der Programmpunkt nicht, passiert nichts.
+    /// </summary>
     public void ErledigtUmschalten(int programmpunktId)
     {
         var programmpunkt = _repository.GetById(programmpunktId);
@@ -43,6 +56,9 @@ public class ProgrammpunktService
         _repository.Update(programmpunkt);
     }
 
+    /// <summary>
+    /// Löscht den Programmpunkt mit der angegebenen Id.
+    /// </summary>
     public void Loeschen(int id) => _repository.Delete(id);
 
     private static ProgrammpunktDto ErstelleDto(Programmpunkt programmpunkt)

@@ -3,14 +3,22 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Markup;
 using Reiseplaner.Dtos;
+using Reiseplaner.Models;
 using Reiseplaner.Services;
 
 namespace Reiseplaner;
 
 public partial class MainWindow : Window
 {
+    private const string DatumsFormat = "yyyy-MM-dd";
+    private const string KeineReiseGewaehltMeldung = "Bitte zuerst eine Reise auswählen.";
+    private const string KeinProgrammpunktGewaehltMeldung = "Bitte zuerst einen Programmpunkt auswählen.";
+    private const string ReiseUnvollstaendigMeldung = "Bitte Titel, Zielort, Start- und Enddatum ausfüllen.";
+    private const string ProgrammpunktUnvollstaendigMeldung = "Bitte Titel, Datum und Kategorie ausfüllen.";
+
     private readonly ReiseService _reiseService;
     private readonly ProgrammpunktService _programmpunktService;
+    private readonly Dictionary<TextBox, TextBlock> _platzhalterProTextBox;
 
     public MainWindow(ReiseService reiseService, ProgrammpunktService programmpunktService)
     {
@@ -19,41 +27,44 @@ public partial class MainWindow : Window
 
         InitializeComponent();
 
-        // XAML-Bindings (z.B. StringFormat={}{0:C}) nutzen sonst immer en-US statt der
-        // System-Kultur (bekannter WPF-Effekt) - dadurch würde CHF 1'500.00 im Code-Behind-Text
-        // nicht zur $-Anzeige in den DataGrid-Spalten passen.
+        _platzhalterProTextBox = new Dictionary<TextBox, TextBlock>
+        {
+            [TitelBox] = TitelPlatzhalter,
+            [ZielortBox] = ZielortPlatzhalter,
+            [BudgetBox] = BudgetPlatzhalter,
+            [PunktTitelBox] = PunktTitelPlatzhalter,
+            [KostenBox] = KostenPlatzhalter
+        };
+
+        // Ohne diese Zeile formatieren XAML-Bindings (StringFormat) immer nach en-US statt nach der Systemkultur.
         Language = XmlLanguage.GetLanguage(CultureInfo.CurrentCulture.IetfLanguageTag);
+
+        KategorieBox.ItemsSource = Kategorien.Alle;
 
         ReisenLaden();
     }
 
     private ReiseDto? AktuelleReise => ReisenGrid.SelectedItem as ReiseDto;
 
-    // Blendet den Platzhaltertext (z.B. "Reisetitel") aus, sobald die zugehörige TextBox
-    // Inhalt hat, und wieder ein, sobald sie leer ist (reine UI-Anzeigelogik).
+    // Blendet den Platzhaltertext aus, sobald die zugehörige TextBox Inhalt hat, und wieder ein, wenn sie leer ist.
     private void PlatzhalterAktualisieren(object sender, TextChangedEventArgs e)
     {
-        var box = (TextBox)sender;
-        var istLeer = box.Text.Length == 0;
-
-        if (box == TitelBox) TitelPlatzhalter.Visibility = istLeer ? Visibility.Visible : Visibility.Collapsed;
-        else if (box == ZielortBox) ZielortPlatzhalter.Visibility = istLeer ? Visibility.Visible : Visibility.Collapsed;
-        else if (box == BudgetBox) BudgetPlatzhalter.Visibility = istLeer ? Visibility.Visible : Visibility.Collapsed;
-        else if (box == PunktTitelBox) PunktTitelPlatzhalter.Visibility = istLeer ? Visibility.Visible : Visibility.Collapsed;
-        else if (box == KostenBox) KostenPlatzhalter.Visibility = istLeer ? Visibility.Visible : Visibility.Collapsed;
+        var textBox = (TextBox)sender;
+        var platzhalter = _platzhalterProTextBox[textBox];
+        platzhalter.Visibility = textBox.Text.Length == 0 ? Visibility.Visible : Visibility.Collapsed;
     }
 
     private void ReisenLaden()
     {
-        ReisenGrid.ItemsSource = _reiseService.GetAlle();
+        ReisenGrid.ItemsSource = _reiseService.LadeAlle();
     }
 
-    // Lädt die Reisen neu (aktualisiert Geplantes/Verbleibendes Budget) und behält die Auswahl bei,
+    // Lädt die Reisen neu (aktualisiert die Budgetwerte) und behält die Auswahl bei,
     // damit die Programmpunkt-Ansicht nach einer Änderung nicht verloren geht.
     private void ReisenAktualisierenMitAuswahl()
     {
         var aktuelleId = AktuelleReise?.Id;
-        var reisen = _reiseService.GetAlle();
+        var reisen = _reiseService.LadeAlle();
         ReisenGrid.ItemsSource = reisen;
         ReisenGrid.SelectedItem = reisen.FirstOrDefault(r => r.Id == aktuelleId);
     }
@@ -73,42 +84,61 @@ public partial class MainWindow : Window
             return;
         }
 
-        ProgrammGrid.ItemsSource = _programmpunktService.GetByReise(reise.Id);
+        ProgrammGrid.ItemsSource = _programmpunktService.LadeProgrammpunkte(reise.Id);
+        BudgetInfoText.Text = ErstelleBudgetText(reise);
+    }
 
-        BudgetInfoText.Text = reise.IstBudgetUeberschritten
-            ? $"Budget: {reise.Budget:C} | Ausgegeben: {reise.GeplantesBudget:C} | ÜBERSCHRITTEN um {-reise.VerbleibendesBudget:C}!"
-            : $"Budget: {reise.Budget:C} | Ausgegeben: {reise.GeplantesBudget:C} | Rest: {reise.VerbleibendesBudget:C}";
+    private static string ErstelleBudgetText(ReiseDto reise)
+    {
+        var anfang = $"Budget: {reise.Budget:C} | Ausgegeben: {reise.GeplantesBudget:C} | ";
+
+        return reise.IstBudgetUeberschritten
+            ? anfang + $"ÜBERSCHRITTEN um {-reise.VerbleibendesBudget:C}!"
+            : anfang + $"Rest: {reise.VerbleibendesBudget:C}";
     }
 
     private void ReiseHinzufuegenButton_Click(object sender, RoutedEventArgs e)
     {
-        if (string.IsNullOrWhiteSpace(TitelBox.Text) || string.IsNullOrWhiteSpace(ZielortBox.Text)
-            || StartPicker.SelectedDate == null || EndePicker.SelectedDate == null)
+        if (!IstReiseFormularVollstaendig())
         {
-            MessageBox.Show("Bitte Titel, Zielort, Start- und Enddatum ausfüllen.");
+            MessageBox.Show(ReiseUnvollstaendigMeldung);
             return;
         }
 
+        _reiseService.Hinzufuegen(LeseReiseAusFormular());
+        LeereReiseFormular();
+        ReisenLaden();
+    }
+
+    private bool IstReiseFormularVollstaendig()
+    {
+        return !string.IsNullOrWhiteSpace(TitelBox.Text)
+            && !string.IsNullOrWhiteSpace(ZielortBox.Text)
+            && StartPicker.SelectedDate != null
+            && EndePicker.SelectedDate != null;
+    }
+
+    private ReiseDto LeseReiseAusFormular()
+    {
         decimal.TryParse(BudgetBox.Text, NumberStyles.Number, CultureInfo.InvariantCulture, out var budget);
 
-        var reiseDto = new ReiseDto
+        return new ReiseDto
         {
             Titel = TitelBox.Text,
             Zielort = ZielortBox.Text,
-            Startdatum = StartPicker.SelectedDate.Value.ToString("yyyy-MM-dd"),
-            Enddatum = EndePicker.SelectedDate.Value.ToString("yyyy-MM-dd"),
+            Startdatum = FormatiereDatum(StartPicker.SelectedDate),
+            Enddatum = FormatiereDatum(EndePicker.SelectedDate),
             Budget = budget
         };
+    }
 
-        _reiseService.Hinzufuegen(reiseDto);
-
+    private void LeereReiseFormular()
+    {
         TitelBox.Clear();
         ZielortBox.Clear();
         StartPicker.SelectedDate = null;
         EndePicker.SelectedDate = null;
         BudgetBox.Clear();
-
-        ReisenLaden();
     }
 
     private void ReiseLoeschenButton_Click(object sender, RoutedEventArgs e)
@@ -116,7 +146,7 @@ public partial class MainWindow : Window
         var reise = AktuelleReise;
         if (reise == null)
         {
-            MessageBox.Show("Bitte zuerst eine Reise auswählen.");
+            MessageBox.Show(KeineReiseGewaehltMeldung);
             return;
         }
 
@@ -131,58 +161,75 @@ public partial class MainWindow : Window
         var reise = AktuelleReise;
         if (reise == null)
         {
-            MessageBox.Show("Bitte zuerst eine Reise auswählen.");
+            MessageBox.Show(KeineReiseGewaehltMeldung);
             return;
         }
 
-        if (string.IsNullOrWhiteSpace(PunktTitelBox.Text) || PunktDatumPicker.SelectedDate == null
-            || KategorieBox.SelectedItem == null)
+        if (!IstProgrammpunktFormularVollstaendig())
         {
-            MessageBox.Show("Bitte Titel, Datum und Kategorie ausfüllen.");
+            MessageBox.Show(ProgrammpunktUnvollstaendigMeldung);
             return;
         }
 
+        _programmpunktService.Hinzufuegen(reise.Id, LeseProgrammpunktAusFormular());
+        LeereProgrammpunktFormular();
+        ReisenAktualisierenMitAuswahl();
+    }
+
+    private bool IstProgrammpunktFormularVollstaendig()
+    {
+        return !string.IsNullOrWhiteSpace(PunktTitelBox.Text)
+            && PunktDatumPicker.SelectedDate != null
+            && KategorieBox.SelectedItem != null;
+    }
+
+    private ProgrammpunktDto LeseProgrammpunktAusFormular()
+    {
         decimal.TryParse(KostenBox.Text, NumberStyles.Number, CultureInfo.InvariantCulture, out var kosten);
 
-        var programmpunktDto = new ProgrammpunktDto
+        return new ProgrammpunktDto
         {
             Titel = PunktTitelBox.Text,
-            Datum = PunktDatumPicker.SelectedDate.Value.ToString("yyyy-MM-dd"),
-            Kategorie = ((ComboBoxItem)KategorieBox.SelectedItem).Content.ToString()!,
+            Datum = FormatiereDatum(PunktDatumPicker.SelectedDate),
+            Kategorie = (string)KategorieBox.SelectedItem,
             Kosten = kosten
         };
+    }
 
-        _programmpunktService.Hinzufuegen(reise.Id, programmpunktDto);
-
+    private void LeereProgrammpunktFormular()
+    {
         PunktTitelBox.Clear();
         PunktDatumPicker.SelectedDate = null;
         KategorieBox.SelectedItem = null;
         KostenBox.Clear();
-
-        ReisenAktualisierenMitAuswahl();
     }
 
     private void ErledigtButton_Click(object sender, RoutedEventArgs e)
     {
-        if (ProgrammGrid.SelectedItem is not ProgrammpunktDto punkt)
+        if (ProgrammGrid.SelectedItem is not ProgrammpunktDto programmpunkt)
         {
-            MessageBox.Show("Bitte zuerst einen Programmpunkt auswählen.");
+            MessageBox.Show(KeinProgrammpunktGewaehltMeldung);
             return;
         }
 
-        _programmpunktService.ErledigtUmschalten(punkt.Id);
+        _programmpunktService.ErledigtUmschalten(programmpunkt.Id);
         ReisenAktualisierenMitAuswahl();
     }
 
     private void PunktLoeschenButton_Click(object sender, RoutedEventArgs e)
     {
-        if (ProgrammGrid.SelectedItem is not ProgrammpunktDto punkt)
+        if (ProgrammGrid.SelectedItem is not ProgrammpunktDto programmpunkt)
         {
-            MessageBox.Show("Bitte zuerst einen Programmpunkt auswählen.");
+            MessageBox.Show(KeinProgrammpunktGewaehltMeldung);
             return;
         }
 
-        _programmpunktService.Loeschen(punkt.Id);
+        _programmpunktService.Loeschen(programmpunkt.Id);
         ReisenAktualisierenMitAuswahl();
+    }
+
+    private static string FormatiereDatum(DateTime? datum)
+    {
+        return datum?.ToString(DatumsFormat) ?? "";
     }
 }

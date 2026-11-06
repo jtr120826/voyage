@@ -4,6 +4,9 @@ using Reiseplaner.Models;
 
 namespace Reiseplaner.Services;
 
+/// <summary>
+/// Business-Logik für Reisen: laden, anlegen, löschen und das Budget berechnen.
+/// </summary>
 public class ReiseService
 {
     private readonly IRepository<Reise> _repository;
@@ -13,13 +16,19 @@ public class ReiseService
         _repository = repository;
     }
 
-    public List<ReiseDto> GetAlle()
+    /// <summary>
+    /// Lädt alle Reisen als DTOs, inklusive geplantem und verbleibendem Budget.
+    /// </summary>
+    public List<ReiseDto> LadeAlle()
     {
         return _repository.GetAll()
             .Select(ErstelleDto)
             .ToList();
     }
 
+    /// <summary>
+    /// Legt eine neue Reise an. Eine allfällige Id im DTO wird ignoriert.
+    /// </summary>
     public void Hinzufuegen(ReiseDto reiseDto)
     {
         var reise = new Reise
@@ -34,6 +43,9 @@ public class ReiseService
         _repository.Add(reise);
     }
 
+    /// <summary>
+    /// Löscht die Reise mit der angegebenen Id.
+    /// </summary>
     public void Loeschen(int id) => _repository.Delete(id);
 
     private static ReiseDto ErstelleDto(Reise reise)
