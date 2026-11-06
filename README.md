@@ -1,6 +1,6 @@
 # Reiseplaner
 
-WPF-Desktop-App zur Planung von Reisen mit Programmpunkten und Budget-Überwachung.
+WPF-Desktop-App zur Planung von Reisen mit Programmpunkten und Budget-Überwachung (lokal mit SQLite).
 Entstanden im Modul PROG1 (gibb) als laufendes Projekt über K0–K4 und die Vertiefungen V-A und V-D.
 
 ## Funktionen
