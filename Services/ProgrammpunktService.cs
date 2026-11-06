@@ -5,20 +5,28 @@ namespace Reiseplaner.Services;
 
 public class ProgrammpunktService
 {
-    private readonly ProgrammpunktDataAccess _dataAccess = new();
+    private readonly IProgrammpunktRepository _repository;
 
-    public List<Programmpunkt> GetByReise(int reiseId) => _dataAccess.GetByReise(reiseId);
+    public ProgrammpunktService(IProgrammpunktRepository repository)
+    {
+        _repository = repository;
+    }
 
-    public void Hinzufuegen(Programmpunkt punkt) => _dataAccess.Add(punkt);
+    public List<Programmpunkt> GetByReise(int reiseId) => _repository.GetByReise(reiseId);
 
-    // Business-Entscheidung "was passiert" (Umschalten des Status) gehört in den Service,
-    // nicht ins Code-Behind - die UI kennt nur noch den Wunsch "toggle", nicht die Logik dahinter.
-    public void ErledigtUmschalten(Programmpunkt punkt) => _dataAccess.SetErledigt(punkt.Id, !punkt.Erledigt);
+    public void Hinzufuegen(Programmpunkt punkt) => _repository.Add(punkt);
 
-    public void Loeschen(int id) => _dataAccess.Delete(id);
+    public void ErledigtUmschalten(Programmpunkt punkt)
+    {
+        var gespeicherterPunkt = _repository.GetById(punkt.Id);
+        if (gespeicherterPunkt == null) return;
 
-    // Berechnung (Business-Logik): wie viel einer Reise-Budgets ist durch die Programmpunkte
-    // bereits verplant, und ist das Budget überschritten?
+        gespeicherterPunkt.Erledigt = !gespeicherterPunkt.Erledigt;
+        _repository.Update(gespeicherterPunkt);
+    }
+
+    public void Loeschen(int id) => _repository.Delete(id);
+
     public BudgetStatus BerechneBudgetStatus(Reise reise, List<Programmpunkt> punkte)
     {
         var ausgegeben = punkte.Sum(p => p.Kosten);

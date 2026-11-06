@@ -5,11 +5,16 @@ namespace Reiseplaner.Services;
 
 public class ReiseService
 {
-    private readonly ReiseDataAccess _dataAccess = new();
+    private readonly IRepository<Reise> _repository;
 
-    public List<Reise> GetAlle() => _dataAccess.GetAll();
+    public ReiseService(IRepository<Reise> repository)
+    {
+        _repository = repository;
+    }
 
-    public void Hinzufuegen(Reise reise) => _dataAccess.Add(reise);
+    public List<Reise> GetAlle() => _repository.GetAll();
 
-    public void Loeschen(int id) => _dataAccess.Delete(id);
+    public void Hinzufuegen(Reise reise) => _repository.Add(reise);
+
+    public void Loeschen(int id) => _repository.Delete(id);
 }

@@ -3,14 +3,13 @@ using Reiseplaner.Models;
 
 namespace Reiseplaner.DataAccess;
 
-public class ReiseDataAccess
+public class ReiseRepository : Repository<Reise>
 {
-    public List<Reise> GetAll()
+    public override List<Reise> GetAll()
     {
         using var context = new AppDbContext();
 
-        // Include() lädt die Programmpunkte pro Reise gleich mit (Navigation Property) -
-        // eine einzelne Abfrage statt pro Reise separat nachzuladen (N+1-Falle vermeiden).
+        // Include() lädt die Programmpunkte pro Reise gleich mit (eine Abfrage statt N+1).
         var reisen = context.Reisen
             .Include(r => r.Programmpunkte)
             .OrderBy(r => r.Startdatum)
@@ -24,14 +23,7 @@ public class ReiseDataAccess
         return reisen;
     }
 
-    public void Add(Reise reise)
-    {
-        using var context = new AppDbContext();
-        context.Reisen.Add(reise);
-        context.SaveChanges();
-    }
-
-    public void Delete(int id)
+    public override void Delete(int id)
     {
         using var context = new AppDbContext();
 
@@ -40,7 +32,7 @@ public class ReiseDataAccess
             .FirstOrDefault(r => r.Id == id);
         if (reise == null) return;
 
-        // Abhängige Programmpunkte zuerst entfernen (kein automatisches Cascade-Delete konfiguriert)
+        // Programmpunkte zuerst entfernen, danach die Reise selbst.
         context.Programmpunkte.RemoveRange(reise.Programmpunkte);
         context.Reisen.Remove(reise);
         context.SaveChanges();

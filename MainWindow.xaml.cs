@@ -9,11 +9,14 @@ namespace Reiseplaner;
 
 public partial class MainWindow : Window
 {
-    private readonly ReiseService _reiseService = new();
-    private readonly ProgrammpunktService _programmpunktService = new();
+    private readonly ReiseService _reiseService;
+    private readonly ProgrammpunktService _programmpunktService;
 
-    public MainWindow()
+    public MainWindow(ReiseService reiseService, ProgrammpunktService programmpunktService)
     {
+        _reiseService = reiseService;
+        _programmpunktService = programmpunktService;
+
         InitializeComponent();
 
         // XAML-Bindings (z.B. StringFormat={}{0:C}) nutzen sonst immer en-US statt der
